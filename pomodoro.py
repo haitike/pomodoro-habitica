@@ -146,7 +146,7 @@ def main():
             print("Basic Pomodoro Timer")
         is_interrupted = timers.timeout_input(int(config.get("Pomodoro", "TaskMinutes")), "Press Intro for stop")
         if is_interrupted:
-            print("\x1b[2K\rTask was completed!")
+            print("\x1b[2K\rTask was interrupted before time")
         else:
             if target_task:
                 # Updating basic pomodoro
