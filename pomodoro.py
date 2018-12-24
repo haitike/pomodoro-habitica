@@ -3,8 +3,15 @@ import contextlib
 from habitica import score_task, get_task
 import timers
 
-with contextlib.redirect_stdout(None):
-    from pygame import mixer
+import importlib
+pygame_spec = importlib.util.find_spec("pygame")
+if pygame_spec is not None:
+    with contextlib.redirect_stdout(None):
+        from pygame import mixer
+        pygame_enabled = True
+else:
+    pygame_enabled = False
+
 import time
 import sys
 
@@ -13,24 +20,26 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 
 def play_notification():
-    mixer.init()
-    song = mixer.Sound("pomodoro.wav")
-    mixer.Sound.play(song) 
-    time.sleep(21)
+    if pygame_enabled:
+        mixer.init()
+        song = mixer.Sound("pomodoro.wav")
+        mixer.Sound.play(song)
+        time.sleep(21)
+    else:
+        print("Install Pygame for Audio notification")
 
-
-def print_task_name(resultado, counts=False, notes=False, daily_task=False):
-    if resultado:
+def print_task_name(result, counts=False, notes=False, daily_task=False):
+    if result:
         if counts:
-            print("Up {:02d} | {}".format(resultado["counterUp"], resultado["text"]), end="")
+            print("Up {:02d} | {}".format(result["counterUp"], result["text"]), end="")
         else:
-            print(resultado["text"], end="")
+            print(result["text"], end="")
         if daily_task:
             print(" (Daily: {})".format(daily_task), end="")
         if notes:
             print()
-            if resultado["notes"]:
-                for linea in resultado["notes"].splitlines():
+            if result["notes"]:
+                for linea in result["notes"].splitlines():
                     print("\t{}".format(linea))
 
         else:
@@ -39,10 +48,10 @@ def print_task_name(resultado, counts=False, notes=False, daily_task=False):
         print("Habitica API Error")
 
 
-def print_item_drop(resultado):
-    if "_tmp" in resultado:
-        if "drop" in resultado["_tmp"]:
-                print(resultado["_tmp"]["drop"]["dialog"])
+def print_item_drop(result):
+    if "_tmp" in result:
+        if "drop" in result["_tmp"]:
+                print(result["_tmp"]["drop"]["dialog"])
 
 
 def update_pomodoros(pomo_id, pomo_set_id=None, pomo_set_interval=4):
