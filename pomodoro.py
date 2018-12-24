@@ -22,8 +22,7 @@ def play_notification():
 def print_task_name(resultado, counts=False, notes=False, daily_task=False):
     if resultado:
         if counts:
-            print(resultado["text"] + " (up {} | down {})"
-                  .format(str(resultado["counterUp"]), str(resultado["counterDown"])), end="")
+            print("Up {:02d} | {}".format(resultado["counterUp"], resultado["text"]), end="")
         else:
             print(resultado["text"], end="")
         if daily_task:
@@ -131,7 +130,7 @@ def main():
             r = get_task(task_list[task_key]["id"])
             print(task_key + " : ", end="")
             print_task_name(r, counts=True, daily_task=task_list[task_key]["daily"])
-        print("Other key : Pomodoro with no task")
+        print("Other key : Basic Pomodoro Timer")
     else:
         state = 1
         target_task = sys.argv[1]
@@ -179,7 +178,7 @@ def main():
                 if r and rr:
                     play_notification()
             else:
-                print("Pomodoro with no task")
+                print("Completed Pomodoro!")
                 play_notification()
 
 
