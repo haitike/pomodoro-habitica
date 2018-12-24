@@ -7,8 +7,8 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 
 headers = {
-    'x-api-user': config.get("HabitacaAPI", "UserID"),
-    'x-api-key': config.get("HabitacaAPI", "APIKey"),
+    'x-api-user': config.get("HabiticaAPI", "UserID"),
+    'x-api-key': config.get("HabiticaAPI", "APIKey"),
 }
 
 def score_task(task_id, positive=True):

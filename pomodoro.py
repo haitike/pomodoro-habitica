@@ -1,6 +1,6 @@
 import contextlib
 
-from habitaca import score_task, get_task
+from habitica import score_task, get_task
 import timers
 
 with contextlib.redirect_stdout(None):
@@ -37,7 +37,7 @@ def print_task_name(resultado, counts=False, notes=False, daily_task=False):
         else:
             print()
     else:
-        print("Habitaca API Error")
+        print("Habitica API Error")
 
 
 def print_item_drop(resultado):
@@ -67,7 +67,7 @@ def update_pomodoros(pomo_id, pomo_set_id=None, pomo_set_interval=4):
             print("Pomodoro: {}".format(pomo_count))
         print_item_drop(r)
     else:
-        print("Habitaca API Error when scoring")
+        print("Habitica API Error when scoring")
 
     return r
 
@@ -103,13 +103,13 @@ def update_habit_and_daily(task_id, daily_id=None, daily_task_list=None, pomo_se
                         if d_r:
                             print("Daily task '{}' was completed!".format(daily_name))
                         else:
-                            print("Habitaca API Error when scoring the daily")
+                            print("Habitica API Error when scoring the daily")
 
             else:
                 print("Error: A list of tasks sharing the same daily was not send")
 
     else:
-        print("Habitaca API Error when scoring the habit")
+        print("Habitica API Error when scoring the habit")
 
     return r
 
@@ -119,7 +119,7 @@ def main():
     state = 0
 
     task_list = dict()
-    for t in config.items("HabitacaHabits"):
+    for t in config.items("HabiticaHabits"):
         task_key = t[0]
         task_info = t[1].split(",")
         task_list[task_key] = {"id": task_info[0], "daily": task_info[1] if len(task_info) > 1 else None}
@@ -150,12 +150,12 @@ def main():
         else:
             if target_task:
                 # Updating basic pomodoro
-                if config.has_option("HabitacaPomodoro", "PomodoroSetID"):
-                    r = update_pomodoros(config.get("HabitacaPomodoro", "PomodoroID"),
-                                         config.get("HabitacaPomodoro", "PomodoroSetID"),
+                if config.has_option("HabiticaPomodoro", "PomodoroSetID"):
+                    r = update_pomodoros(config.get("HabiticaPomodoro", "PomodoroID"),
+                                         config.get("HabiticaPomodoro", "PomodoroSetID"),
                                          int(config.get("Pomodoro", "TotalSet")))
                 else:
-                    r = update_pomodoros(config.get("HabitacaPomodoro", "PomodoroID"))
+                    r = update_pomodoros(config.get("HabiticaPomodoro", "PomodoroID"))
 
                 # Scoring the task
                 target_task_daily_name = task_list[target_task]["daily"]
@@ -165,9 +165,9 @@ def main():
                         target_daily_task_list[task] = task_list[task]
 
                 if target_task_daily_name:
-                    if target_task_daily_name in dict(config.items("HabitacaDailies")):
+                    if target_task_daily_name in dict(config.items("HabiticaDailies")):
                         rr = update_habit_and_daily(task_list[target_task]["id"],
-                                                    config.get("HabitacaDailies", target_task_daily_name),
+                                                    config.get("HabiticaDailies", target_task_daily_name),
                                                     target_daily_task_list,
                                                     int(config.get("Pomodoro", "TotalSet")))
                     else:
