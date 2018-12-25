@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import contextlib
 
 from habitica import score_task, get_task
