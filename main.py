@@ -32,7 +32,7 @@ def play_notification():
 def print_task_name(result, counts=False, notes=False, daily_task=False):
     if result:
         if counts:
-            print("Up {:02d} | {}".format(result["counterUp"], result["text"]), end="")
+            print("{:02d} | {}".format(result["counterUp"], result["text"]), end="")
         else:
             print(result["text"], end="")
         if daily_task:
@@ -124,72 +124,99 @@ def update_habit_and_daily(task_id, daily_id=None, daily_task_list=None, pomo_se
 
 
 def main():
-    # 0 inactivo | 1 pomodoro | 2 post-pomodoro | 3 descanso
+    # State: 0 exit | 1 menu | 2 post-menu | 3 pomodoro | 4 post-pomodoro | 5 descanso
     state = 0
-
+    current_task = None
     task_list = dict()
+
     for t in config.items("HabiticaHabits"):
         task_key = t[0]
         task_info = t[1].split(",")
         task_list[task_key] = {"id": task_info[0], "daily": task_info[1] if len(task_info) > 1 else None}
 
     if len(sys.argv) < 2:
-        state = 0   
-        print("choose a task (Input the shortcut letter):")
-        for task_key in task_list:
-            r = get_task(task_list[task_key]["id"])
-            print(task_key + " : ", end="")
-            print_task_name(r, counts=True, daily_task=task_list[task_key]["daily"])
-        print("Other key : Basic Pomodoro Timer")
-    else:
         state = 1
-        target_task = sys.argv[1]
-        if target_task not in task_list:
-            target_task = None
+    else:
+        current_task = sys.argv[1]
+        state = 2
 
-        # timers.mini_countdown(5)
-        if target_task:
-            r = get_task(task_list[target_task]["id"])
-            print_task_name(r, counts=True, notes=True)
-        else:
-            print("Basic Pomodoro Timer")
-        is_interrupted = timers.timeout_input(int(config.get("Pomodoro", "TaskMinutes")), "Press Intro for stop")
-        if is_interrupted:
-            print("\x1b[2K\rTask was interrupted before time")
-        else:
-            if target_task:
-                # Updating basic pomodoro
-                if config.has_option("HabiticaPomodoro", "PomodoroSetID"):
-                    r = update_pomodoros(config.get("HabiticaPomodoro", "PomodoroID"),
-                                         config.get("HabiticaPomodoro", "PomodoroSetID"),
-                                         int(config.get("Pomodoro", "TotalSet")))
-                else:
-                    r = update_pomodoros(config.get("HabiticaPomodoro", "PomodoroID"))
-
-                # Scoring the task
-                target_task_daily_name = task_list[target_task]["daily"]
-                target_daily_task_list = {}
-                for task in task_list:
-                    if task_list[task]["daily"] == target_task_daily_name:
-                        target_daily_task_list[task] = task_list[task]
-
-                if target_task_daily_name:
-                    if target_task_daily_name in dict(config.items("HabiticaDailies")):
-                        rr = update_habit_and_daily(task_list[target_task]["id"],
-                                                    config.get("HabiticaDailies", target_task_daily_name),
-                                                    target_daily_task_list,
-                                                    int(config.get("Pomodoro", "TotalSet")))
-                    else:
-                        print("Error: The associated task's daily {} does not exist".format(target_task_daily_name))
-                        rr = update_habit_and_daily(task_list[target_task]["id"])
-                else:
-                    rr = update_habit_and_daily(task_list[target_task]["id"])
-
-                if r and rr:
-                    play_notification()
+    while state:
+        # Menu
+        if state == 1:
+            print("Main menu: <code> The task code <list> List of task codes <exit> Exit the menu")
+            current_task = input("Input the task code: ")
+            state = 2
+        # Evaluating Menu input
+        elif state == 2:
+            if current_task == "list":
+                print("pomo : -- | Basic Pomodoro Timer")
+                for task_key in task_list:
+                    r = get_task(task_list[task_key]["id"])
+                    print(task_key + " : ", end="")
+                    print_task_name(r, counts=True, daily_task=task_list[task_key]["daily"])
+                print()
+                state = 1
+            elif current_task == "exit":
+                state = 0
+            elif current_task == "pomo":
+                current_task = None
+                state = 3
             else:
-                print("Completed Pomodoro!")
-                play_notification()
+                if current_task not in task_list:
+                    print("invalid task code")
+                    current_task = None
+                    state = 1
+                else:
+                    state = 3
+        # Pomodoro State
+        elif state == 3:
+            if current_task:
+                r = get_task(task_list[current_task]["id"])
+                print_task_name(r, counts=True, notes=True)
+            else:
+                print("Basic Pomodoro Timer")
+            is_interrupted = timers.timeout_input(int(config.get("Pomodoro", "TaskMinutes")), "Press Intro for stop")
+            if is_interrupted:
+                print("\x1b[2K\rTask was interrupted before time")
+            else:
+                if current_task:
+                    # Updating basic pomodoro
+                    if config.has_option("HabiticaPomodoro", "PomodoroSetID"):
+                        r = update_pomodoros(config.get("HabiticaPomodoro", "PomodoroID"),
+                                             config.get("HabiticaPomodoro", "PomodoroSetID"),
+                                             int(config.get("Pomodoro", "TotalSet")))
+                    else:
+                        r = update_pomodoros(config.get("HabiticaPomodoro", "PomodoroID"))
+
+                    # Scoring the task
+                    target_task_daily_name = task_list[current_task]["daily"]
+                    target_daily_task_list = {}
+                    for task in task_list:
+                        if task_list[task]["daily"] == target_task_daily_name:
+                            target_daily_task_list[task] = task_list[task]
+
+                    if target_task_daily_name:
+                        if target_task_daily_name in dict(config.items("HabiticaDailies")):
+                            rr = update_habit_and_daily(task_list[current_task]["id"],
+                                                        config.get("HabiticaDailies", target_task_daily_name),
+                                                        target_daily_task_list,
+                                                        int(config.get("Pomodoro", "TotalSet")))
+                        else:
+                            print("Error: The associated task's daily {} does not exist".format(target_task_daily_name))
+                            rr = update_habit_and_daily(task_list[current_task]["id"])
+                    else:
+                        rr = update_habit_and_daily(task_list[current_task]["id"])
+
+                    if r and rr:
+                        play_notification()
+                else:
+                    print("Completed Pomodoro!")
+                    play_notification()
+            state = 1
+        elif state == 4:
+            pass
+        else:
+            print("Warning: Bad state")
 
 
 if __name__  ==  '__main__':
