@@ -1,11 +1,22 @@
 class StateItem:
-    def __init__(self, key, text, func):
+    def __init__(self, key, text, func=None, exits=False):
         self.key = key
         self.text = text
         self.func = func
+        self.exits = exits
 
     def get_line_text(self):
         return "{}\t {}\n".format(self.key, self.text)
+
+    def run(self):
+        if self.func:
+            self.func()
+
+    def is_exit_item(self):
+        return self.exits
+
+    def get_key(self):
+        return self.key
 
 
 class MenuState:
@@ -38,6 +49,22 @@ class MenuState:
     def get_input_text(self):
         return "{}: ".format(self.input_text)
 
+    def get_key_list(self):
+        key_list = list()
+        for item in self.items:
+            key_list.append(item.get_key())
+        return key_list
+
+    def run_item(self, key):
+        for item in self.items:
+            if item.get_key() == key:
+                item.run()
+
+    def check_exit(self, key):
+        for item in self.items:
+            if item.get_key() == key:
+                if item.is_exit_item():
+                    return True
 
 class Menu:
     def __init__(self):
@@ -55,19 +82,36 @@ class Menu:
                 return True
         return False
 
-    def start(self):
+    def start_main_loop(self):
         self.running = True
         while self.running:
             self.print_menu()
+            self.input_key()
+
+    def stop(self):
+        self.running = False
 
     def print_menu(self):
         state = self.states[self.current_state]
         menu_text = state.get_menu_text()
         print(menu_text)
-        input(state.get_input_text())
 
-    def stop(self):
-        self.running = False
+    def input_key(self):
+        state = self.states[self.current_state]
+        code_input = input(state.get_input_text())
+        if self.check_input_key(code_input):
+            state.run_item(code_input)
+            if state.check_exit(code_input):
+                self.stop()
+        else:
+            return False
+
+    def check_input_key(self, input_key):
+        key_list = self.states[self.current_state].get_key_list()
+        if input_key not in key_list:
+            return False
+        else:
+            return True
 
     def next_state(self):
         self.current_state += 1

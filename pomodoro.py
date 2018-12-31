@@ -2,6 +2,7 @@ import select
 import sys
 import time
 
+
 def timeout_input(minutes, prompt=""):
     seconds = minutes*60
     sys.stdout.write("{}\n".format(prompt))
@@ -17,6 +18,7 @@ def timeout_input(minutes, prompt=""):
         sys.stdout.write('\n')
         sys.stdout.flush()
         return False
+
 
 def mini_countdown(seconds):
     for t in range(seconds, -1, -1):

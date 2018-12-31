@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import contextlib
 import time
-import configparser
 from importlib import util
 
 import menu
@@ -14,9 +13,12 @@ if pygame_spec is not None:
 else:
     pygame_enabled = False
 
-
+# import configparser
 # config = configparser.ConfigParser()
 # config.read("config.ini")
+
+def print_coso():
+    print("coso")
 
 
 def play_notification():
@@ -32,13 +34,13 @@ def play_notification():
 def main():
     main_menu = menu.Menu()
     menu_state_1 = menu.MenuState("Main Menu", input_text="Input one code")
-    menu_item_pomo = menu.StateItem("b", "Basic pomodoro", None)
-    menu_item_exit = menu.StateItem("e", "Exits", None)
+    menu_item_pomo = menu.StateItem("b", "Basic pomodoro", func=print_coso)
+    menu_item_exit = menu.StateItem("e", "Exists", exits=True)
 
     menu_state_1.append_item(menu_item_pomo)
     menu_state_1.append_item(menu_item_exit)
     main_menu.append_state(menu_state_1)
-    main_menu.start()
+    main_menu.start_main_loop()
 
 
 if __name__  ==  '__main__':
