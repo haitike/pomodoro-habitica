@@ -11,6 +11,13 @@ from main import config, play_notification
 config = configparser.ConfigParser()
 config.read("config.ini")
 
+
+class task:
+    def __init__(self, code, id):
+        self.code = code
+        self.id = id
+
+
 headers = {
     'x-api-user': config.get("HabiticaAPI", "UserID"),
     'x-api-key': config.get("HabiticaAPI", "APIKey"),

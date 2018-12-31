@@ -17,8 +17,9 @@ else:
 # config = configparser.ConfigParser()
 # config.read("config.ini")
 
-def print_coso():
-    print("coso")
+
+def print_test():
+    print("basic pomo")
 
 
 def play_notification():
@@ -34,8 +35,8 @@ def play_notification():
 def main():
     main_menu = menu.Menu()
     menu_state_1 = menu.MenuState("Main Menu", input_text="Input one code")
-    menu_item_pomo = menu.StateItem("b", "Basic pomodoro", func=print_coso)
-    menu_item_exit = menu.StateItem("e", "Exists", exits=True)
+    menu_item_pomo = menu.StateItem("b", "Basic pomodoro", print_test)
+    menu_item_exit = menu.StateExitItem("e", "Exists")
 
     menu_state_1.append_item(menu_item_pomo)
     menu_state_1.append_item(menu_item_exit)

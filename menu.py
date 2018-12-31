@@ -1,9 +1,8 @@
 class StateItem:
-    def __init__(self, key, text, func=None, exits=False):
+    def __init__(self, key, text, func=None):
         self.key = key
         self.text = text
         self.func = func
-        self.exits = exits
 
     def get_line_text(self):
         return "{}\t {}\n".format(self.key, self.text)
@@ -11,12 +10,21 @@ class StateItem:
     def run(self):
         if self.func:
             self.func()
-
-    def is_exit_item(self):
-        return self.exits
+            return "func"
+        else:
+            return None
 
     def get_key(self):
         return self.key
+
+
+class StateExitItem(StateItem):
+    def __init__(self, key, text):
+        self.key = key
+        self.text = text
+
+    def run(self):
+        return "exit"
 
 
 class MenuState:
@@ -58,13 +66,8 @@ class MenuState:
     def run_item(self, key):
         for item in self.items:
             if item.get_key() == key:
-                item.run()
+                return item.run()
 
-    def check_exit(self, key):
-        for item in self.items:
-            if item.get_key() == key:
-                if item.is_exit_item():
-                    return True
 
 class Menu:
     def __init__(self):
@@ -100,8 +103,8 @@ class Menu:
         state = self.states[self.current_state]
         code_input = input(state.get_input_text())
         if self.check_input_key(code_input):
-            state.run_item(code_input)
-            if state.check_exit(code_input):
+            r = state.run_item(code_input)
+            if r == "exit":
                 self.stop()
         else:
             return False
