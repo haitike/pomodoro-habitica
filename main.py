@@ -4,6 +4,11 @@ import time
 from importlib import util
 
 import menu
+import habitica
+
+import configparser
+config = configparser.ConfigParser()
+config.read("config.ini")
 
 pygame_spec = util.find_spec("pygame")
 if pygame_spec is not None:
@@ -12,10 +17,6 @@ if pygame_spec is not None:
         pygame_enabled = True
 else:
     pygame_enabled = False
-
-# import configparser
-# config = configparser.ConfigParser()
-# config.read("config.ini")
 
 
 def print_test():
@@ -33,6 +34,12 @@ def play_notification():
 
 
 def main():
+    user = habitica.User(config.get("HabiticaAPI", "UserID"), config.get("HabiticaAPI", "APIKey"))
+    print("La tarea fue puntuada correctamente.")
+    print("\tHP: {:.0f}".format(user.hp))
+    print("\tExp (lv {}): {}".format(user.lvl, user.exp))
+    print("\tGold: {:.0f}".format(user.gold))
+
     main_menu = menu.Menu()
     menu_state_1 = menu.MenuState("Main Menu", input_text="Input one code")
     menu_item_pomo = menu.StateItem("b", "Basic pomodoro", print_test)

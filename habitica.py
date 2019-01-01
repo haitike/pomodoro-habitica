@@ -3,57 +3,102 @@ import sys
 
 import requests
 
-import configparser
-
 import pomodoro
-from main import config, play_notification
-
-config = configparser.ConfigParser()
-config.read("config.ini")
+from main import play_notification
 
 
-class task:
-    def __init__(self, code, id):
+class Task:
+    def __init__(self, code, habitica_id, headers):
         self.code = code
-        self.id = id
+        self.habitica_id = habitica_id
+        self.headers = headers
+        task_info = self.get_task_info()
+        if not task_info:
+            self.hp = None
+            self.exp = None
+            self.lvl = None
 
+    def score_task(self, positive=True):
+        data = {
+            'type': 'task',
+        }
 
-headers = {
-    'x-api-user': config.get("HabiticaAPI", "UserID"),
-    'x-api-key': config.get("HabiticaAPI", "APIKey"),
-}
-
-def score_task(task_id, positive=True):
-    data = {
-        'type': 'task',
-    }
-
-    if positive:
-        r = requests.post('https://habitica.com/api/v3/tasks/' + task_id + '/score/up', headers=headers, data=data)
-    else:
-        r = requests.post('https://habitica.com/api/v3/tasks/' + task_id + '/score/down', headers=headers, data=data)
-
-    resultado = json.loads(r.content)
-    if r.ok:
-        if resultado["success"]:
-            return resultado["data"]
+        if positive:
+            r = requests.post('https://habitica.com/api/v3/tasks/' + self.habitica_id +
+                              '/score/up', headers=self.headers, data=data)
         else:
-            return None
-    else:
-        return None
+            r = requests.post('https://habitica.com/api/v3/tasks/' + self.habitica_id +
+                              '/score/down', headers=self.headers, data=data)
 
-
-def get_task(task_id):
-    r = requests.get('https://habitica.com/api/v3/tasks/' + task_id, headers=headers)
-
-    resultado = json.loads(r.content)
-    if r.ok:
-        if resultado["success"]:
-            return resultado["data"]
+        result = json.loads(r.content)
+        if r.ok:
+            if result["success"]:
+                self.hp = result["data"]["hp"]
+                self.exp = result["data"]["exp"]
+                self.lvl = result["data"]["lvl"]
+                return True
+            else:
+                return False
         else:
-            return None
-    else:
-        return None
+            return False
+
+    def get_task_info(self):
+        r = requests.get('https://habitica.com/api/v3/tasks/' + self.habitica_id, headers=self.headers)
+
+        result = json.loads(r.content)
+        if r.ok:
+            if result["success"]:
+                self.text = result["data"]["text"]
+                return True
+            else:
+                return False
+        else:
+            return False
+
+
+class User():
+    def __init__(self, api_user, api_key):
+        self.headers = {
+            'x-api-user': api_user,
+            'x-api-key': api_key,
+        }
+
+        self.hp = None
+        self.max_hp = None
+        self.exp = None
+        self.exp_next = None
+        self.lvl = None
+        self.gold = None
+
+        self.update_user()
+
+        self.habits = list()
+        self.dailys = list()
+
+    def add_habit(self, habit):
+        self.habits.append(habit)
+
+    def add_daily(self, daily):
+        self.dailys.append(daily)
+
+    def update_user(self):
+        r = requests.get('https://habitica.com/api/v3/user', headers=self.headers)
+
+        result = json.loads(r.content)
+        if r.ok:
+            if result["success"]:
+                stats = result["data"]["stats"]
+                self.hp = stats["hp"]
+                self.max_hp = stats["maxHealth"]
+                self.exp = stats["exp"]
+                self.exp_next = stats["toNextLevel"]
+                self.lvl = stats["lvl"]
+                self.gold = stats["gp"]
+                return True
+            else:
+                return False
+        else:
+            return False
 
 
 def print_task_name(result, counts=False, notes=False, daily_task=False):
