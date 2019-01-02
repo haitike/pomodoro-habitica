@@ -35,15 +35,15 @@ def play_notification():
 
 def main():
     user = habitica.User(config.get("HabiticaAPI", "UserID"), config.get("HabiticaAPI", "APIKey"))
-    print(user.get_stats_text())
 
     main_menu = menu.Menu()
-    menu_state_1 = menu.MenuState("Main Menu", input_text="Input one code")
-    menu_item_pomo = menu.StateItem("b", "Basic pomodoro", print_test)
-    menu_item_exit = menu.StateExitItem("e", "Exists")
 
-    menu_state_1.append_item(menu_item_pomo)
-    menu_state_1.append_item(menu_item_exit)
+    menu_state_1 = menu.MenuState("Main Menu", input_text="Input one code")
+    menu_state_1.append_item(menu.StateItem("b", "Basic pomodoro", print_test))
+    for habit in user.get_habits():
+        menu_state_1.append_item(menu.StateItem("x", habit.get_line_text()))
+    menu_state_1.append_item(menu.StateExitItem("e", "Exists"))
+
     main_menu.append_state(menu_state_1)
     main_menu.start_main_loop()
 

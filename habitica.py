@@ -62,6 +62,8 @@ class Task:
         else:
             return False
 
+    def get_line_text(self):
+        return "{}".format(self.text)
 
 class Habit(Task):
     def __init__(self, habitica_id, headers):
@@ -81,6 +83,12 @@ class Habit(Task):
         info = self.get_info_from_habitica()
         if info:
             self.set_info(info["text"], info["notes"], info["counterUp"], info["counterDown"])
+
+    def get_line_text(self):
+        tag_names = list()
+        for tag_id in self.tags:
+            tag_names.append(self.tags[tag_id])
+        return "{:<25s}\tUp:{:<3s}\t{}".format(self.text, str(self.counter_up), ", ".join(tag_names))
 
     def extract_key_code_from_notes(self):
         if self.notes:
@@ -103,6 +111,12 @@ class Daily(Task):
         Task.__init__(self, habitica_id, headers)
         self.type = "Daily"
 
+    def get_line_text(self):
+        tag_names = list()
+        for tag_id in self.tags:
+            tag_names.append(self.tags[tag_id])
+        return "{:<25s}\t{:<6s}\t{}".format(self.text, "XX/XX", ", ".join(tag_names))
+
 
 class User():
     def __init__(self, api_user, api_key):
@@ -115,6 +129,7 @@ class User():
         self.habits = list()
         self.dailys = list()
 
+        self.username = None
         self.hp = None
         self.max_hp = None
         self.exp = None
@@ -124,7 +139,7 @@ class User():
 
         self.update_pomo_tags()
         self.update_tasks()
-        self.update_stats()
+        self.update_profile_and_stats()
 
     def add_habit(self, habit):
         self.habits.append(habit)
@@ -147,12 +162,16 @@ class User():
         else:
             return False
 
-    def update_stats(self):
+    def update_profile_and_stats(self):
         r = requests.get('https://habitica.com/api/v3/user', headers=self.headers)
 
         result = json.loads(r.content)
         if r.ok:
             if result["success"]:
+                # Profile
+                self.username = result["data"]["profile"]["name"]
+
+                # Stats
                 stats = result["data"]["stats"]
                 self.hp = stats["hp"]
                 self.max_hp = stats["maxHealth"]
@@ -176,10 +195,10 @@ class User():
                 daily_list = list()
                 for task in result["data"]:
                     if task["tags"]:
-                        new_tag_list = list()
+                        new_tag_list = dict()
                         for tag in task["tags"]:
                             if tag in self.pomo_tags:
-                                new_tag_list.append(tag)
+                                new_tag_list[tag] = self.pomo_tags[tag]
                         if new_tag_list:
                             if task["type"] == "habit":
                                 new_task = Habit(task["id"], self.headers)
@@ -199,11 +218,33 @@ class User():
         else:
             return False
 
+    def get_habits(self):
+        return self.habits
+
     def get_stats_text(self):
-        text = ""
+        text = "{}\n".format(self.username)
         text += "\tHP: {:.0f} / {}\n".format(self.hp, self.max_hp)
         text += "\tExp (lv {:.0f}): {} / {}\n".format(self.lvl, self.exp, self.exp_next)
         text += "\tGold: {:.0f}\n".format(self.gold)
+        return text
+
+    def get_all_text(self):
+        text = self.get_stats_text()
+
+        text += "Habits:\n"
+        if self.habits:
+            for task in self.habits:
+                text+= "\t{}\n".format(task.get_line_text())
+        else:
+            text += "\tNo habits\n"
+
+        text += "Dailys:\n"
+        if self.dailys:
+            for task in self.dailys:
+                text += "\t{}\n".format(task.get_line_text())
+        else:
+            text += "\tNo habits\n"
+
         return text
 
 
