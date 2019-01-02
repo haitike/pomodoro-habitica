@@ -35,10 +35,7 @@ def play_notification():
 
 def main():
     user = habitica.User(config.get("HabiticaAPI", "UserID"), config.get("HabiticaAPI", "APIKey"))
-    print("La tarea fue puntuada correctamente.")
-    print("\tHP: {:.0f}".format(user.hp))
-    print("\tExp (lv {}): {}".format(user.lvl, user.exp))
-    print("\tGold: {:.0f}".format(user.gold))
+    print(user.get_stats_text())
 
     main_menu = menu.Menu()
     menu_state_1 = menu.MenuState("Main Menu", input_text="Input one code")
