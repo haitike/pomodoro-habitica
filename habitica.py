@@ -65,6 +65,7 @@ class Task:
     def get_line_text(self):
         return "{}".format(self.text)
 
+
 class Habit(Task):
     def __init__(self, habitica_id, headers):
         Task.__init__(self, habitica_id, headers)
@@ -83,6 +84,9 @@ class Habit(Task):
         info = self.get_info_from_habitica()
         if info:
             self.set_info(info["text"], info["notes"], info["counterUp"], info["counterDown"])
+
+    def get_key_code(self):
+        return self.key_code
 
     def get_line_text(self):
         tag_names = list()

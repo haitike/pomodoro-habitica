@@ -1,11 +1,22 @@
-class StateItem:
-    def __init__(self, key, text, func=None):
-        self.key = key
+class Item:
+    autokey_index = 1
+
+    def __init__(self, text, key=None, func=None):
         self.text = text
         self.func = func
+        self.key = key
+        if self.key:
+            self.is_autokey = False
+        else:
+            self.is_autokey = True
+            self.key = str(Item.autokey_index)
+            Item.autokey_index += 1
 
     def get_line_text(self):
-        return "{}\t {}\n".format(self.key, self.text)
+        if self.key:
+            return "{:<5s}\t {}\n".format(self.key, self.text)
+        else:
+            return "{:<5s}\t {}\n".format("", self.text)
 
     def run(self):
         if self.func:
@@ -17,17 +28,19 @@ class StateItem:
     def get_key(self):
         return self.key
 
-
-class StateExitItem(StateItem):
-    def __init__(self, key, text):
+    def set_key(self, key):
         self.key = key
-        self.text = text
+
+
+class ExitItem(Item):
+    def __init__(self, text, key=None):
+        Item.__init__(self, text, key)
 
     def run(self):
         return "exit"
 
 
-class MenuState:
+class State:
     def __init__(self, name, top_text="", input_text="Input a key"):
         self.name = name
         self.items = list()
@@ -49,13 +62,11 @@ class MenuState:
         if self.top_text:
             text += self.top_text
             text += "\n\n"
-        for i in self.items:
-            text += i.get_line_text()
-
+        for item in sorted(self.items, key=lambda x: (x.is_autokey, x.key)):
+        #for item in self.items:
+            #print(item.key)
+            text += item.get_line_text()
         return text
-
-    def get_input_text(self):
-        return "{}: ".format(self.input_text)
 
     def get_key_list(self):
         key_list = list()
@@ -67,6 +78,9 @@ class MenuState:
         for item in self.items:
             if item.get_key() == key:
                 return item.run()
+
+    def get_input_text(self):
+        return "{}: ".format(self.input_text)
 
 
 class Menu:
