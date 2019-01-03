@@ -15,3 +15,7 @@
 
 ### Config
 Fill the config.ini file with your habitica and pomodoro info.
+
+### Code used:
+Used code from https://github.com/mini-gui/pomodoro-timer
+by Guido Minieri
