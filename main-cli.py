@@ -5,10 +5,19 @@ from importlib import util
 
 import menu
 import habitica
-
+import sys
 import configparser
 config = configparser.ConfigParser()
 config.read("config.ini")
+
+if sys.platform.startswith('win32'):
+    print("Pomodoro timer is currently not supported in Windows. \nExiting...")
+    exit()
+elif sys.platform.startswith('linux'):
+    # Linux-specific code here...
+    pass
+else:
+    print("Warning: Your operative system may be not supported")
 
 pygame_spec = util.find_spec("pygame")
 if pygame_spec is not None:

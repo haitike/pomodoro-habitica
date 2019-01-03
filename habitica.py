@@ -4,8 +4,6 @@ import sys
 import requests
 
 import pomodoro
-from main import play_notification
-
 
 class Task:
     def __init__(self, habitica_id, headers):
