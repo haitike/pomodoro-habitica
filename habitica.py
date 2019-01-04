@@ -3,7 +3,6 @@ import sys
 
 import requests
 
-import pomodoro
 
 class Task:
     def __init__(self, habitica_id, headers):
@@ -223,11 +222,13 @@ class User():
     def get_habits(self):
         return self.habits
 
-    def get_stats_text(self):
-        text = "{}\n".format(self.username)
-        text += "\tHP: {:.0f} / {}\n".format(self.hp, self.max_hp)
-        text += "\tExp (lv {:.0f}): {} / {}\n".format(self.lvl, self.exp, self.exp_next)
-        text += "\tGold: {:.0f}\n".format(self.gold)
+    def get_stats_text(self, tab_format=True):
+        t = ""
+        if tab_format: t = "\t"
+        text = "{} (lv{:.0f})\n".format(self.username, self.lvl)
+        text += "{}HP: {:.0f} / {}\n".format(t, self.hp, self.max_hp)
+        text += "{}Exp: {:.0f} / {}\n".format(t, self.exp, self.exp_next)
+        text += "{}Gold: {:.0f}\n".format(t, self.gold)
         return text
 
     def get_all_text(self):
