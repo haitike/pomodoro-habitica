@@ -3,7 +3,6 @@ import sys
 
 import requests
 
-
 class Task:
     def __init__(self, habitica_id, headers):
         self.habitica_id = habitica_id
@@ -20,6 +19,15 @@ class Task:
     def set_info(self, text, notes):
         self.text = text
         self.notes = notes
+
+    def get_text(self):
+        return self.text
+
+    def get_tag_names(self):
+        tag_names = list()
+        for tag_id in self.tags:
+            tag_names.append(self.tags[tag_id])
+        return tag_names
 
     def get_info_from_habitica(self):
         r = requests.get('https://habitica.com/api/v3/tasks/' + self.habitica_id, headers=self.headers)
@@ -60,7 +68,7 @@ class Task:
             return False
 
     def get_line_text(self):
-        return "{}".format(self.text)
+        return "{:<31s}\t{}".format(self.text, ", ".join(self.get_tag_names()))
 
 
 class Habit(Task):
@@ -85,11 +93,11 @@ class Habit(Task):
     def get_key_code(self):
         return self.key_code
 
+    def get_counters(self):
+        return self.counter_up, self.counter_down
+
     def get_line_text(self):
-        tag_names = list()
-        for tag_id in self.tags:
-            tag_names.append(self.tags[tag_id])
-        return "{:<25s}\tUp:{:<3s}\t{}".format(self.text, str(self.counter_up), ", ".join(tag_names))
+        return "{:<25s}\tUp:{:<3s}\t{}".format(self.text, str(self.counter_up), ", ".join(self.get_tag_names()))
 
     def extract_key_code_from_notes(self):
         if self.notes:
@@ -113,10 +121,7 @@ class Daily(Task):
         self.type = "Daily"
 
     def get_line_text(self):
-        tag_names = list()
-        for tag_id in self.tags:
-            tag_names.append(self.tags[tag_id])
-        return "{:<25s}\t{:<6s}\t{}".format(self.text, "XX/XX", ", ".join(tag_names))
+        return "{:<25s}\t{:<6s}\t{}".format(self.text, "XX/XX", ", ".join(self.get_tag_names()))
 
 
 class User():

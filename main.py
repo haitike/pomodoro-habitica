@@ -131,25 +131,34 @@ start_btn = tk.Button(root, text="Start", command=start)
 interrupt_btn = tk.Button(root, text="Interrupt")
 reset_btn = tk.Button(root, text="Stop", command=stop_count)
 
-habit_radio_list= list()
 radio_var = tk.IntVar(root)
-habit_radio_list.append(tk.Radiobutton(root, text="Basic Pomo", variable=radio_var))
+habit_radio_list = [tk.Radiobutton(root, text="Basic Pomo", variable=radio_var)]
+habit_counter_label_list = [tk.Label(root)]
+habit_dailys_label_list = [tk.Label(root)]
 for habit in user.get_habits():
-    habit_radio_list.append(tk.Radiobutton(root, text=habit.get_line_text(), variable=radio_var))
+    habit_radio_list.append(tk.Radiobutton(root, text=habit.get_text(), variable=radio_var))
+    counters = habit.get_counters()
+    habit_counter_label_list.append(tk.Label(root, text="{}/{}".format(counters[0], counters[1])))
+    habit_dailys_label_list.append(tk.Label(root, text=",".join(habit.get_tag_names())))
+
 
 # Grid Left
-for row_index_left, label in enumerate(user_info_label_list, start=1):
-    label.grid(row=row_index_left, column=1, sticky='w')
-time_label.grid(row=row_index_left+2, column=1, columnspan=2)
-status_label.grid(row=row_index_left+3, column=1, sticky='w')
-streak_label.grid(row=row_index_left+4, column=1, sticky='w')
+for row_index_left, label in enumerate(user_info_label_list):
+    label.grid(row=row_index_left+1, column=1, sticky='w')
+time_label.grid(row=row_index_left+3, column=1, columnspan=2)
+status_label.grid(row=row_index_left+4, column=1, sticky='w')
+streak_label.grid(row=row_index_left+5, column=1, sticky='w')
 
 # Grid Right
 start_btn.grid(row=1, column=3)
 interrupt_btn.grid(row=1, column=4)
 reset_btn.grid(row=1, column=5)
-for row_index_right, radio in enumerate(habit_radio_list, start=2):
-    radio.grid(row=row_index_right, column=3, columnspan=3)
+for row_index_right, radio in enumerate(habit_radio_list):
+    habit_radio_list[row_index_right].grid(row=row_index_right+2, column=3, columnspan=1)
+    habit_counter_label_list[row_index_right].grid(row=row_index_right+2, column=4, columnspan=1)
+    habit_dailys_label_list[row_index_right].grid(row=row_index_right+2, column=5, columnspan=1)
+
+
 #habit_menu.configure(takefocus=1)
 
 # MAINLOOP
