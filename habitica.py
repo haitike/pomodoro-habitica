@@ -228,7 +228,7 @@ class User():
         text = "{} (lv{:.0f})\n".format(self.username, self.lvl)
         text += "{}HP: {:.0f} / {}\n".format(t, self.hp, self.max_hp)
         text += "{}Exp: {:.0f} / {}\n".format(t, self.exp, self.exp_next)
-        text += "{}Gold: {:.0f}\n".format(t, self.gold)
+        text += "{}Gold: {:.0f}".format(t, self.gold)
         return text
 
     def get_all_text(self):

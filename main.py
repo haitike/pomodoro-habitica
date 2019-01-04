@@ -99,56 +99,58 @@ user = habitica.User(config.get("HabiticaAPI", "UserID"), config.get("HabiticaAP
 # root & title
 root = tk.Tk()
 root.title('Pomo')
-root.geometry('180x160')
+root.geometry('400x360')
 
 # labels
-# main label area
-main_label = tk.Frame(root)
-main_label.grid(row=4, column=3, sticky='nesw')
+# Frames
+#main_frame = tk.Frame(root)
+#main_frame.grid(row=3, column=5, sticky='nesw')
 
 # column padding in window
-root.grid_columnconfigure(1, weight=1)
-root.grid_columnconfigure(2, weight=1)
-root.grid_columnconfigure(3, weight=1)
+#root.grid_columnconfigure(1, weight=1)
+#root.grid_columnconfigure(2, weight=1)
+#root.grid_columnconfigure(3, weight=1)
+#root.grid_columnconfigure(4, weight=3)
 
 # row padding in window
-root.grid_rowconfigure(1, weight=1)
-root.grid_rowconfigure(2, weight=1)
-root.grid_rowconfigure(3, weight=1)
-root.grid_rowconfigure(4, weight=1)
+#root.grid_rowconfigure(1, weight=1)
+#root.grid_rowconfigure(2, weight=1)
+#root.grid_rowconfigure(3, weight=1)
 
-# User info
-user_info_label = tk.Label(main_label, text=user.get_stats_text(tab_format=False))
-user_info_label.grid(row=1, column=1, columnspan=3)
+#placeholder_label = tk.Label(main_frame, text=' ~ ')
+#placeholder_label.grid(row=3, column=2)
 
-# time label
-time_label = tk.Label(main_label, text='00:00')
-time_label.grid(row=2, column=1, columnspan=1)
+# Widgets
+user_info_label_list = list()
+for line in user.get_stats_text(tab_format=False).splitlines():
+    user_info_label_list.append(tk.Label(root, text=line))
+time_label = tk.Label(root, text='00:00')
+status_label = tk.Label(root, text='Stopped')
+streak_label = tk.Label(root, text='Streak: 0')
+start_btn = tk.Button(root, text="Start", command=start)
+interrupt_btn = tk.Button(root, text="Interrupt")
+reset_btn = tk.Button(root, text="Stop", command=stop_count)
 
-# placehodler label
-placeholder_label = tk.Label(main_label, text=' ~ ')
-placeholder_label.grid(row=3, column=2)
-
-# counter label
-cnt_label = tk.Label(main_label, text='Streak: 0')
-cnt_label.grid(row=2, column=3, columnspan=1)
-
-
-# buttons
-start_btn = tk.Button(main_label, text="Start", command=start)
-start_btn.grid(row=3, column=1)
-stop_btn = tk.Button(main_label, text="Stop", command=stop_count)
-stop_btn.grid(row=3, column=3)
-
-# Menu
-menu_var = tk.StringVar(root)
-menu_var.set("Basic Pomo")
-habit_list = ["Basic Pomo"]
+habit_radio_list= list()
+radio_var = tk.IntVar(root)
+habit_radio_list.append(tk.Radiobutton(root, text="Basic Pomo", variable=radio_var))
 for habit in user.get_habits():
-    habit_list.append(habit.get_line_text())
+    habit_radio_list.append(tk.Radiobutton(root, text=habit.get_line_text(), variable=radio_var))
 
-habit_menu = tk.OptionMenu(main_label, menu_var, *habit_list)
-habit_menu.grid(row=4, column =1, columnspan=3)
+# Grid Left
+for row_index_left, label in enumerate(user_info_label_list, start=1):
+    label.grid(row=row_index_left, column=1, sticky='w')
+time_label.grid(row=row_index_left+2, column=1, columnspan=2)
+status_label.grid(row=row_index_left+3, column=1, sticky='w')
+streak_label.grid(row=row_index_left+4, column=1, sticky='w')
+
+# Grid Right
+start_btn.grid(row=1, column=3)
+interrupt_btn.grid(row=1, column=4)
+reset_btn.grid(row=1, column=5)
+for row_index_right, radio in enumerate(habit_radio_list, start=2):
+    radio.grid(row=row_index_right, column=3, columnspan=3)
+#habit_menu.configure(takefocus=1)
 
 # MAINLOOP
 root.mainloop()
