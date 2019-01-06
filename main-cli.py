@@ -49,13 +49,14 @@ def main():
 
     menu_state_1 = menu.State("Main Menu", input_text="Input one code")
     menu_state_1.append_item(menu.Item("Basic pomodoro", "b", print_test))
-    for habit in user.get_habits():
-        menu_state_1.append_item(menu.Item(habit.get_line_text(), habit.get_key_code()))
+    for habit in user.habits:
+        menu_state_1.append_item(menu.Item(habit.get_line_text(), habit.key_code))
     menu_state_1.append_item(menu.ExitItem("Exit", "e"))
     menu_state_1.append_item(menu.ExitItem("Exit"))
 
     main_menu.append_state(menu_state_1)
     main_menu.start_main_loop()
+    print(user.get_all_text())
 
 
 if __name__  ==  '__main__':

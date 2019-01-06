@@ -3,25 +3,19 @@ import sys
 
 import requests
 
+
 class Task:
-    def __init__(self, habitica_id, headers):
-        self.habitica_id = habitica_id
+    def __init__(self, id, headers, retrieve_info=True, text=None, notes=None):
+        self.id = id
         self.headers = headers
         self.type = "Task"
-
         self.tags = list()
-        self.text = None
-        self.notes = None
 
-    def set_tags(self, tags):
-        self.tags = tags
-
-    def set_info(self, text, notes):
-        self.text = text
-        self.notes = notes
-
-    def get_text(self):
-        return self.text
+        if retrieve_info:
+            self.update_info()
+        else:
+            self.text = text
+            self.notes = notes
 
     def get_tag_names(self):
         tag_names = list()
@@ -30,7 +24,7 @@ class Task:
         return tag_names
 
     def get_info_from_habitica(self):
-        r = requests.get('https://habitica.com/api/v3/tasks/' + self.habitica_id, headers=self.headers)
+        r = requests.get('https://habitica.com/api/v3/tasks/' + self.id, headers=self.headers)
 
         result = json.loads(r.content)
         if r.ok:
@@ -44,18 +38,19 @@ class Task:
     def update_info(self):
         info = self.get_info_from_habitica()
         if info:
-            self.set_info(info["text"], info["notes"])
+            self.text = info["text"]
+            self.notes = info["notes"]
 
-    def score_task(self, positive=True):
+    def score(self, positive=True):
         data = {
             'type': 'task',
         }
 
         if positive:
-            r = requests.post('https://habitica.com/api/v3/tasks/' + self.habitica_id +
+            r = requests.post('https://habitica.com/api/v3/tasks/' + self.id +
                               '/score/up', headers=self.headers, data=data)
         else:
-            r = requests.post('https://habitica.com/api/v3/tasks/' + self.habitica_id +
+            r = requests.post('https://habitica.com/api/v3/tasks/' + self.id +
                               '/score/down', headers=self.headers, data=data)
 
         result = json.loads(r.content)
@@ -72,59 +67,51 @@ class Task:
 
 
 class Habit(Task):
-    def __init__(self, habitica_id, headers):
-        Task.__init__(self, habitica_id, headers)
+    def __init__(self, id, headers, retrieve_info=True, text=None, notes=None, counter_up=None, counter_down=None):
+        Task.__init__(self, id, headers, retrieve_info, text, notes)
         self.type = "Habit"
         self.key_code = None
-        self.counter_up = 0
-        self.counter_down = 0
+        self.notes, self.key_code = self.extract_key_code(notes)
 
-    def set_info(self, text, notes, counter_up, counter_down ):
-        Task.set_info(self, text, notes)
-        self.counter_up = counter_up
-        self.counter_down = counter_down
-        self.extract_key_code_from_notes()
+        if not retrieve_info:
+            self.counter_up = counter_up
+            self.counter_down = counter_down
 
     def update_info(self):
         info = self.get_info_from_habitica()
         if info:
-            self.set_info(info["text"], info["notes"], info["counterUp"], info["counterDown"])
-
-    def get_key_code(self):
-        return self.key_code
-
-    def get_counters(self):
-        return self.counter_up, self.counter_down
+            self.text = info["text"]
+            self.notes, self.key_code = self.extract_key_code(info["notes"])
+            self.counter_up = info["counterUp"]
+            self.counter_down = info["counterDown"]
 
     def get_line_text(self):
-        return "{:<25s}\tUp:{:<3s}\t{}".format(self.text, str(self.counter_up), ", ".join(self.get_tag_names()))
+        return "{:<25s}\t{:<6s}\t{}".format(self.text,
+                                            str(self.counter_up) + "/" + str(self.counter_down),
+                                            ", ".join(self.get_tag_names()))
 
-    def extract_key_code_from_notes(self):
-        if self.notes:
-            new_notes = ""
-            for line in self.notes.splitlines():
-                if line:
-                    if line.startswith("[//]: # ("):
-                        key_code = line.replace(")", "(").split("(")[1]
-                        self.key_code = key_code
-                    else:
-                        new_notes += line + "\n"
-            self.notes = new_notes
-            return True
-        else:
-            return False
+    def extract_key_code(self,text):
+        new_text = ""
+        key_code = None
+        for line in text.splitlines():
+            if line:
+                if line.startswith("[//]: # ("):
+                    key_code = line.replace(")", "(").split("(")[1]
+                else:
+                    new_text += line + "\n"
+        return new_text, key_code
 
 
 class Daily(Task):
-    def __init__(self, habitica_id, headers):
-        Task.__init__(self, habitica_id, headers)
+    def __init__(self, id, headers, retrieve_info=True, text=None, notes=None):
+        Task.__init__(self, id, headers, retrieve_info, text, notes)
         self.type = "Daily"
 
     def get_line_text(self):
         return "{:<25s}\t{:<6s}\t{}".format(self.text, "XX/XX", ", ".join(self.get_tag_names()))
 
 
-class User():
+class User:
     def __init__(self, api_user, api_key):
         self.headers = {
             'x-api-user': api_user,
@@ -145,7 +132,7 @@ class User():
 
         self.update_pomo_tags()
         self.update_tasks()
-        self.update_profile_and_stats()
+        self.update_profile_stats()
 
     def add_habit(self, habit):
         self.habits.append(habit)
@@ -168,7 +155,7 @@ class User():
         else:
             return False
 
-    def update_profile_and_stats(self):
+    def update_profile_stats(self):
         r = requests.get('https://habitica.com/api/v3/user', headers=self.headers)
 
         result = json.loads(r.content)
@@ -207,14 +194,15 @@ class User():
                                 new_tag_list[tag] = self.pomo_tags[tag]
                         if new_tag_list:
                             if task["type"] == "habit":
-                                new_task = Habit(task["id"], self.headers)
-                                new_task.set_info(task["text"], task["notes"], task["counterUp"], task["counterDown"])
-                                new_task.set_tags(new_tag_list)
+                                new_task = Habit(task["id"], self.headers, retrieve_info=False,
+                                                 text=task["text"], notes=task["notes"],
+                                                 counter_up=task["counterUp"], counter_down=task["counterDown"])
+                                new_task.tags = new_tag_list
                                 habit_list.append(new_task)
                             elif task["type"] == "daily":
-                                new_task = Daily(task["id"], self.headers)
-                                new_task.set_info(task["text"], task["notes"])
-                                new_task.set_tags(new_tag_list)
+                                new_task = Daily(task["id"], self.headers, retrieve_info=False,
+                                                 text=task["text"], notes=task["notes"])
+                                new_task.tags = new_tag_list
                                 daily_list.append(new_task)
                 self.habits = habit_list
                 self.dailys = daily_list
@@ -224,8 +212,8 @@ class User():
         else:
             return False
 
-    def get_habits(self):
-        return self.habits
+    def score_task(self, id):
+        pass
 
     def get_stats_text(self, tab_format=True):
         t = ""
@@ -239,7 +227,7 @@ class User():
     def get_all_text(self):
         text = self.get_stats_text()
 
-        text += "Habits:\n"
+        text += "\nHabits:\n"
         if self.habits:
             for task in self.habits:
                 text+= "\t{}\n".format(task.get_line_text())

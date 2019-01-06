@@ -49,9 +49,9 @@ def count(timer):
     m, s = divmod(timer, 60)
     time_label.configure(text='{:02d}:{:02d}'.format(m, s))
     if is_break:
-        cnt_label.configure(text='BREAK!')
+        streak_label.configure(text='BREAK!')
     else:
-        cnt_label.configure(text='Streak: {}'.format(SESS_COUNTER))
+        streak_label.configure(text='Streak: {}'.format(SESS_COUNTER))
     job = root.after(1000, count, timer - 1)
 
 
@@ -64,7 +64,7 @@ def stop_count():
     time_label.configure(text='{:02d}:{:02d}'.format(0, 0))
     SESS_COUNTER = 0
     is_break = False
-    cnt_label.configure(text='Streak: {}'.format(0))
+    streak_label.configure(text='Streak: {}'.format(0))
     start_btn.configure(text="Start", command=lambda: start())
 
 
@@ -99,13 +99,7 @@ user = habitica.User(config.get("HabiticaAPI", "UserID"), config.get("HabiticaAP
 # root & title
 root = tk.Tk()
 root.title('Pomo')
-root.geometry('400x360')
-
-# labels
-# Frames
-#main_frame = tk.Frame(root)
-#main_frame.grid(row=3, column=5, sticky='nesw')
-
+#root.geometry('400x360')
 # column padding in window
 #root.grid_columnconfigure(1, weight=1)
 #root.grid_columnconfigure(2, weight=1)
@@ -130,36 +124,34 @@ streak_label = tk.Label(root, text='Streak: 0')
 start_btn = tk.Button(root, text="Start", command=start)
 interrupt_btn = tk.Button(root, text="Interrupt")
 reset_btn = tk.Button(root, text="Stop", command=stop_count)
+other_actions_menubtn = tk.Menubutton(root, text="Other actions", relief=tk.RAISED)
 
 radio_var = tk.IntVar(root)
-habit_radio_list = [tk.Radiobutton(root, text="Basic Pomo", variable=radio_var)]
+habit_radio_list = [tk.Radiobutton(root, text="Basic Pomodoro", variable=radio_var, value=0)]
 habit_counter_label_list = [tk.Label(root)]
 habit_dailys_label_list = [tk.Label(root)]
-for habit in user.get_habits():
-    habit_radio_list.append(tk.Radiobutton(root, text=habit.get_text(), variable=radio_var))
-    counters = habit.get_counters()
-    habit_counter_label_list.append(tk.Label(root, text="{}/{}".format(counters[0], counters[1])))
+for habit in user.habits:
+    habit_radio_list.append(tk.Radiobutton(root, text=habit.text, variable=radio_var, value=habit.id))
+    habit_counter_label_list.append(tk.Label(root, text="{}/{}".format(habit.counter_up, habit.counter_down)))
     habit_dailys_label_list.append(tk.Label(root, text=",".join(habit.get_tag_names())))
 
 
 # Grid Left
 for row_index_left, label in enumerate(user_info_label_list):
     label.grid(row=row_index_left+1, column=1, sticky='w')
-time_label.grid(row=row_index_left+3, column=1, columnspan=2)
-status_label.grid(row=row_index_left+4, column=1, sticky='w')
-streak_label.grid(row=row_index_left+5, column=1, sticky='w')
+time_label.grid(row=row_index_left+3, column=1, columnspan=2, rowspan=2, sticky='nwse')
+status_label.grid(row=row_index_left+5, column=1, sticky='w')
+streak_label.grid(row=row_index_left+6, column=1, sticky='w')
+other_actions_menubtn.grid(row=row_index_left+ 8, column=1)
 
 # Grid Right
 start_btn.grid(row=1, column=3)
 interrupt_btn.grid(row=1, column=4)
 reset_btn.grid(row=1, column=5)
 for row_index_right, radio in enumerate(habit_radio_list):
-    habit_radio_list[row_index_right].grid(row=row_index_right+2, column=3, columnspan=1)
-    habit_counter_label_list[row_index_right].grid(row=row_index_right+2, column=4, columnspan=1)
-    habit_dailys_label_list[row_index_right].grid(row=row_index_right+2, column=5, columnspan=1)
-
-
-#habit_menu.configure(takefocus=1)
+    habit_radio_list[row_index_right].grid(row=row_index_right+2, column=3, sticky='w')
+    habit_counter_label_list[row_index_right].grid(row=row_index_right+2, column=4, sticky='w')
+    habit_dailys_label_list[row_index_right].grid(row=row_index_right+2, column=5, sticky='w')
 
 # MAINLOOP
 root.mainloop()

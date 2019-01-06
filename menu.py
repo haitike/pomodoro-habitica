@@ -25,12 +25,6 @@ class Item:
         else:
             return None
 
-    def get_key(self):
-        return self.key
-
-    def set_key(self, key):
-        self.key = key
-
 
 class ExitItem(Item):
     def __init__(self, text, key=None):
@@ -63,20 +57,18 @@ class State:
             text += self.top_text
             text += "\n\n"
         for item in sorted(self.items, key=lambda x: (x.is_autokey, x.key)):
-        #for item in self.items:
-            #print(item.key)
             text += item.get_line_text()
         return text
 
     def get_key_list(self):
         key_list = list()
         for item in self.items:
-            key_list.append(item.get_key())
+            key_list.append(item.key)
         return key_list
 
     def run_item(self, key):
         for item in self.items:
-            if item.get_key() == key:
+            if item.key == key:
                 return item.run()
 
     def get_input_text(self):
@@ -135,4 +127,3 @@ class Menu:
 
     def previous_state(self):
         self.current_state -= 1
-
