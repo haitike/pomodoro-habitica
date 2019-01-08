@@ -55,7 +55,11 @@ class Task:
         result = json.loads(r.content)
         if r.ok:
             if result["success"]:
-                return result["data"]["hp"], result["data"]["exp"], result["data"]["lvl"]
+                drop = None
+                if "_tmp" in result["data"]:
+                    if "drop" in result["data"]["_tmp"]:
+                        drop = "{} ({})".format(result["data"]["_tmp"]["drop"]["key"], result["data"]["_tmp"]["drop"]["type"])
+                return result["data"]["hp"], result["data"]["exp"], result["data"]["lvl"], result["data"]["gp"], drop
             else:
                 return False
         else:
@@ -87,6 +91,7 @@ class Habit(Task):
                                             str(self.counter_up) + "/" + str(self.counter_down),
                                             ", ".join(self.get_tag_names()))
 
+
 class Daily(Task):
     def __init__(self, id, headers, retrieve_info=True, text=None, notes=None):
         Task.__init__(self, id, headers, retrieve_info, text, notes)
@@ -104,8 +109,8 @@ class User:
         }
 
         self.pomo_tags = dict()
-        self.habits = list()
-        self.dailys = list()
+        self.habits = dict()
+        self.dailys = dict()
         self.basic_pomo = None
         self.basic_pomoset = None
 
@@ -122,15 +127,10 @@ class User:
         self.crate_tasks_from_tags()
         self.create_basic_pomo_habits(bpomo_id, bpomoset_id)
 
-    def add_habit(self, habit):
-        self.habits.append(habit)
-
-    def add_daily(self, daily):
-        self.dailys.append(daily)
-
     def create_basic_pomo_habits(self, bpomo_id, bpomoset_id):
         if bpomo_id:
             self.basic_pomo = Habit(bpomo_id, self.headers, retrieve_info=True)
+
         if bpomoset_id:
             self.basic_pomoset = Habit(bpomoset_id, self.headers, retrieve_info=True)
 
@@ -140,8 +140,6 @@ class User:
         result = json.loads(r.content)
         if r.ok:
             if result["success"]:
-                habit_list = list()
-                daily_list = list()
                 for task in result["data"]:
                     if task["tags"]:
                         new_tag_list = dict()
@@ -153,15 +151,15 @@ class User:
                                 new_task = Habit(task["id"], self.headers, retrieve_info=False,
                                                  text=task["text"], notes=task["notes"],
                                                  counter_up=task["counterUp"], counter_down=task["counterDown"])
-                                new_task.tags = new_tag_list
-                                habit_list.append(new_task)
+                                if new_task:
+                                    new_task.tags = new_tag_list
+                                    self.habits[task["id"]] = new_task
                             elif task["type"] == "daily":
                                 new_task = Daily(task["id"], self.headers, retrieve_info=False,
                                                  text=task["text"], notes=task["notes"])
-                                new_task.tags = new_tag_list
-                                daily_list.append(new_task)
-                self.habits = habit_list
-                self.dailys = daily_list
+                                if new_task:
+                                    new_task.tags = new_tag_list
+                                    self.dailys[task["id"]] = new_task
                 return True
             else:
                 return False
@@ -207,10 +205,10 @@ class User:
             return False
 
     def update_taks(self):
-        for index, task in enumerate(self.habits):
-            self.habits[index].update_info()
-        for index, task in enumerate(self.dailys):
-            self.dailys[index].update_info()
+        for id in self.habits:
+            self.habits[id].update_info()
+        for id in self.dailys:
+            self.dailys[id].update_info()
 
     def update_basic_pomo_habits(self):
         if self.basic_pomo:
@@ -218,62 +216,65 @@ class User:
         if self.basic_pomoset:
             self.basic_pomoset.update_info()
 
-    def score_task(self, id):
+    def score_basic_pomo(self):
+        drops = list()
+        if self.basic_pomo:
+            p_score_result = self.basic_pomo.score()
+            if p_score_result:
+                self.hp, self.exp, self.lvl, self.gold = p_score_result[0], p_score_result[1], p_score_result[2], \
+                                                         p_score_result[3]
+                if p_score_result[4]:
+                    drops.append(p_score_result[4])
+        return drops
+
+    def score_habit(self, id):
+        drops = self.score_basic_pomo()
+        if id:
+            t_score_result = self.habits[id].score()
+            if t_score_result:
+                self.hp, self.exp, self.lvl, self.gold = t_score_result[0], t_score_result[1], t_score_result[2], \
+                                                         t_score_result[3]
+                if t_score_result[4]:
+                    drops.append(t_score_result[4])
+        self.check_dailies(id)
+        return drops
+
+    def check_dailies(self, id):
         pass
 
-    def get_stats_text(self, tab_format=True):
+    def get_stats_text(self, add_tabs=False):
         t = ""
-        if tab_format: t = "\t"
+        if add_tabs: t = "\t"
         text = "{} (lv{:.0f})\n".format(self.username, self.lvl)
         text += "{}HP: {:.0f} / {}\n".format(t, self.hp, self.max_hp)
         text += "{}Exp: {:.0f} / {}\n".format(t, self.exp, self.exp_next)
         text += "{}Gold: {:.0f}".format(t, self.gold)
         return text
 
+    # For tests
     def get_all_text(self):
-        text = self.get_stats_text()
+        text = self.get_stats_text(add_tabs=True)
+
+        if self.basic_pomo:
+            text += "\nBasic Pomodoros:\n"
+            text += "\t{}\n".format(self.basic_pomo.get_line_text())
+            text += "\t{}".format(self.basic_pomoset.get_line_text())
 
         text += "\nHabits:\n"
         if self.habits:
-            for task in self.habits:
-                text+= "\t{}\n".format(task.get_line_text())
+            for id in self.habits:
+                text+= "\t{}\n".format(self.habits[id].get_line_text())
         else:
             text += "\tNo habits\n"
 
         text += "Dailys:\n"
         if self.dailys:
-            for task in self.dailys:
-                text += "\t{}\n".format(task.get_line_text())
+            for id in self.dailys:
+                text += "\t{}\n".format(self.dailys[id].get_line_text())
         else:
             text += "\tNo habits\n"
 
         return text
-
-
-def print_task_name(result, counts=False, notes=False, daily_task=False):
-    if result:
-        if counts:
-            print("{:02d} | {}".format(result["counterUp"], result["text"]), end="")
-        else:
-            print(result["text"], end="")
-        if daily_task:
-            print(" (Daily: {})".format(daily_task), end="")
-        if notes:
-            print()
-            if result["notes"]:
-                for linea in result["notes"].splitlines():
-                    print("\t{}".format(linea))
-
-        else:
-            print()
-    else:
-        print("Habitica API Error")
-
-
-def print_item_drop(result):
-    if "_tmp" in result:
-        if "drop" in result["_tmp"]:
-                print(result["_tmp"]["drop"]["dialog"])
 
 
 def update_pomodoros(pomo_id, pomo_set_id=None, pomo_set_interval=4):

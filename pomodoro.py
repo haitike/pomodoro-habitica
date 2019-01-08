@@ -10,7 +10,7 @@ class Pomodoro(tk.Frame):
         self.user = user
 
         # Habitica config
-        self.seconds_in_minute = 60  # Change it for fast tests.
+        self.seconds_in_minute = 1  # Change it for fast tests.
         self.session_scs = 25 * self.seconds_in_minute
         self.short_rest_scs = 5 * self.seconds_in_minute
         self.long_rest_scs = 25 * self.seconds_in_minute
@@ -25,7 +25,7 @@ class Pomodoro(tk.Frame):
 
         # Widgets left side
         self.user_info_label_list = list()
-        for line in self.user.get_stats_text(tab_format=False).splitlines():
+        for line in self.user.get_stats_text().splitlines():
             self.user_info_label_list.append(tk.Label(self, text=line))
         self.time_label = tk.Label(self, text='00:00')
         self.status_label = tk.Label(self, text='Stopped')
@@ -36,24 +36,22 @@ class Pomodoro(tk.Frame):
         self.start_btn = tk.Button(self, text="Start", command=self.start)
         self.interrupt_btn = tk.Button(self, text="Interrupt")
         self.reset_btn = tk.Button(self, text="Reset", command=self.stop_count)
-
-        self.radio_var = tk.IntVar(self)
-
+        self.radio_var = tk.StringVar()
+        self.radio_var.set("pomo")
         bpomo = self.user.basic_pomo
         if bpomo:
-            self.bpomo_radio = tk.Radiobutton(self, text=bpomo.text, variable=self.radio_var, value=bpomo.id)
+            self.bpomo_radio = tk.Radiobutton(self, text=bpomo.text, variable=self.radio_var, value="pomo")
             self.bpomo_counter_label = tk.Label(self, text="{}/{}".format(bpomo.counter_up, bpomo.counter_down))
         else:
-            self.bpomo_radio = tk.Radiobutton(self, text="Basic Pomodoro", variable=self.radio_var, value=0)
+            self.bpomo_radio = tk.Radiobutton(self, text="Basic Pomodoro", variable=self.radio_var, value="pomo")
             self.bpomo_counter_label = tk.Label(self, text="")
-
         self.habit_radio_list = list()
         self.habit_counter_label_list = list()
         self.habit_dailys_label_list = list()
-        for habit in self.user.habits:
-            self.habit_radio_list.append(tk.Radiobutton(self, text=habit.text, variable=self.radio_var, value=habit.id))
-            self.habit_counter_label_list.append(tk.Label(self, text="{}/{}".format(habit.counter_up, habit.counter_down)))
-            self.habit_dailys_label_list.append(tk.Label(self, text=",".join(habit.get_tag_names())))
+        for id in self.user.habits:
+            self.habit_radio_list.append(tk.Radiobutton(self, text=self.user.habits[id].text, variable=self.radio_var, value=id))
+            self.habit_counter_label_list.append(tk.Label(self, text="{}/{}".format(self.user.habits[id].counter_up, self.user.habits[id].counter_down)))
+            self.habit_dailys_label_list.append(tk.Label(self, text=",".join(self.user.habits[id].get_tag_names())))
 
         # Grid Left side
         for row_index_left, label in enumerate(self.user_info_label_list):
@@ -88,7 +86,20 @@ class Pomodoro(tk.Frame):
 
             # prompt and start new session
             if self.is_break and self.session_counter % 4 != 0:
-                prompt_answer = messagebox.askquestion("Session Ended!", "Are you ready for a break?", icon='question')
+                exp, gold, lvl = self.user.exp, self.user.gold, self.user.lvl
+                success_text = ""
+                drops = list()
+                if self.radio_var.get() == "pomo":
+                    if self.user.basic_pomo:
+                        drops = self.user.score_basic_pomo()
+                else:
+                    drops = self.user.score_habit(self.radio_var.get())
+                if self.user.lvl > lvl:
+                    success_text += "Level up! You are now level {}!!\n".format(self.user.lvl)
+                success_text += "Exp: {:+.2f} Gold: {:+.2f} \n".format(self.user.exp - exp, self.user.gold - gold)
+                if drops:
+                    success_text += "Drops: {}\n".format(drops)
+                prompt_answer = messagebox.askquestion("Session Ended!", success_text + "Are you ready for a break?", icon='question')
             elif self.is_break and self.session_counter % 4 == 0:
                 prompt_answer = messagebox.askquestion("4 POMODORI!", "Do you think you deserve a very long break", icon='question')
             else:
@@ -123,10 +134,25 @@ class Pomodoro(tk.Frame):
         self.session_counter = 0
         self.is_break = False
         self.streak_label.configure(text='Streak: {}'.format(0))
-        self.start_btn.configure(text="Start", command=lambda: self.start())
+        self.start_btn.grid()
+        self.bpomo_radio.grid()
+        self.bpomo_counter_label.grid()
+        for index, widget in enumerate(self.habit_radio_list):
+            self.habit_radio_list[index].grid()
+            self.habit_counter_label_list[index].grid()
+            self.habit_dailys_label_list[index].grid()
+        #self.start_btn.configure(text="Start", command=lambda: self.start())
 
     # starts counting loop
     def start(self):
         self.session_counter += 1
-        self.start_btn.configure(command=tk.DISABLED)
+        self.start_btn.grid_remove()
+        #self.start_btn.configure(command=tk.DISABLED)
         self.count(self.session_scs)
+        self.bpomo_radio.grid_remove()
+        self.bpomo_counter_label.grid_remove()
+        for index, widget in enumerate(self.habit_radio_list):
+            self.habit_radio_list[index].grid_remove()
+            self.habit_counter_label_list[index].grid_remove()
+            self.habit_dailys_label_list[index].grid_remove()
+

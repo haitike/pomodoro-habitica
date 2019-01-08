@@ -19,10 +19,10 @@ lbreak_mts = int(config.get("Pomodoro", "LongBreakMinutes"))
 pomoset_amnt = int(config.get("Pomodoro", "PomoSetAmount"))
 bpomo_id=None
 bpomoset_id=None
-if config.has_option("HabiticaPomodoro", "PomoID"):
+if config.has_option("BasicPomodoros", "PomoID"):
     bpomo_id = config.get("BasicPomodoros", "PomoID")
-if config.has_option("HabiticaPomodoro", "PomoSetID"):
-    bpomo_id = config.get("BasicPomodoros", "PomoSetID")
+if config.has_option("BasicPomodoros", "PomoSetID"):
+    bpomoset_id = config.get("BasicPomodoros", "PomoSetID")
 
 def main():
     args = sys.argv[1:]
@@ -38,6 +38,7 @@ def main():
         Label(root, text=code).pack()
     else:
         user = User(hab_id, hab_key, bpomo_id, bpomoset_id)
+        print(user.get_all_text()) #test
         pomo = Pomodoro(root, user)
         pomo.pack(side="top", fill="both", expand=True)
         pomo.set_config(sess_mts, sbreak_mts, lbreak_mts, pomoset_amnt)
