@@ -10,6 +10,19 @@ import configparser
 config = configparser.ConfigParser()
 config.read("config.ini")
 
+# Config variables
+hab_id = config.get("HabiticaAPI", "UserID")
+hab_key = config.get("HabiticaAPI", "APIKey")
+sess_mts = int(config.get("Pomodoro", "SessionMinutes"))
+sbreak_mts = int(config.get("Pomodoro", "ShortBreakMinutes"))
+lbreak_mts = int(config.get("Pomodoro", "LongBreakMinutes"))
+pomoset_amnt = int(config.get("Pomodoro", "PomoSetAmount"))
+bpomo_id=None
+bpomoset_id=None
+if config.has_option("HabiticaPomodoro", "PomoID"):
+    bpomo_id = config.get("BasicPomodoros", "PomoID")
+if config.has_option("HabiticaPomodoro", "PomoSetID"):
+    bpomo_id = config.get("BasicPomodoros", "PomoSetID")
 
 def main():
     args = sys.argv[1:]
@@ -24,13 +37,10 @@ def main():
         Frame(root).pack(side="top", fill="both", expand=True)
         Label(root, text=code).pack()
     else:
-        user = User(config.get("HabiticaAPI", "UserID"), config.get("HabiticaAPI", "APIKey"),
-                    bpomo_id=config.get("BasicPomodoros", "PomoID"),
-                    bpomoset_id=config.get("BasicPomodoros", "PomoSetID"))
+        user = User(hab_id, hab_key, bpomo_id, bpomoset_id)
         pomo = Pomodoro(root, user)
         pomo.pack(side="top", fill="both", expand=True)
-        pomo.set_config(int(config.get("Pomodoro", "SessionMinutes")), int(config.get("Pomodoro", "ShortBreakMinutes")),
-                        int(config.get("Pomodoro", "LongBreakMinutes")), int(config.get("Pomodoro", "PomoSetAmount")))
+        pomo.set_config(sess_mts, sbreak_mts, lbreak_mts, pomoset_amnt)
     root.mainloop()
 
 

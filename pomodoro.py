@@ -38,9 +38,18 @@ class Pomodoro(tk.Frame):
         self.reset_btn = tk.Button(self, text="Reset", command=self.stop_count)
 
         self.radio_var = tk.IntVar(self)
-        self.habit_radio_list = [tk.Radiobutton(self, text="Basic Pomodoro", variable=self.radio_var, value=0)]
-        self.habit_counter_label_list = [tk.Label(self)]
-        self.habit_dailys_label_list = [tk.Label(self)]
+
+        bpomo = self.user.basic_pomo
+        if bpomo:
+            self.bpomo_radio = tk.Radiobutton(self, text=bpomo.text, variable=self.radio_var, value=bpomo.id)
+            self.bpomo_counter_label = tk.Label(self, text="{}/{}".format(bpomo.counter_up, bpomo.counter_down))
+        else:
+            self.bpomo_radio = tk.Radiobutton(self, text="Basic Pomodoro", variable=self.radio_var, value=0)
+            self.bpomo_counter_label = tk.Label(self, text="")
+
+        self.habit_radio_list = list()
+        self.habit_counter_label_list = list()
+        self.habit_dailys_label_list = list()
         for habit in self.user.habits:
             self.habit_radio_list.append(tk.Radiobutton(self, text=habit.text, variable=self.radio_var, value=habit.id))
             self.habit_counter_label_list.append(tk.Label(self, text="{}/{}".format(habit.counter_up, habit.counter_down)))
@@ -58,10 +67,12 @@ class Pomodoro(tk.Frame):
         self.start_btn.grid(row=1, column=3)
         self.interrupt_btn.grid(row=1, column=4)
         self.reset_btn.grid(row=1, column=5)
+        self.bpomo_radio.grid(row=2, column=3, sticky='w')
+        self.bpomo_counter_label.grid(row=2, column=4, sticky='w')
         for row_index_right, radio in enumerate(self.habit_radio_list):
-            self.habit_radio_list[row_index_right].grid(row=row_index_right+2, column=3, sticky='w')
-            self.habit_counter_label_list[row_index_right].grid(row=row_index_right+2, column=4, sticky='w')
-            self.habit_dailys_label_list[row_index_right].grid(row=row_index_right+2, column=5, sticky='w')
+            self.habit_radio_list[row_index_right].grid(row=row_index_right+4, column=3, sticky='w')
+            self.habit_counter_label_list[row_index_right].grid(row=row_index_right+4, column=4, sticky='w')
+            self.habit_dailys_label_list[row_index_right].grid(row=row_index_right+4, column=5, sticky='w')
 
     def set_config(self, sess_mts, srest_mts, lgrest_mts, set_amnt):
         self.session_scs = sess_mts * self.seconds_in_minute
