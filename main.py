@@ -4,6 +4,11 @@
 import sys
 from tkinter import Tk
 from pomodoro import Pomodoro
+from habitica import User
+
+import configparser
+config = configparser.ConfigParser()
+config.read("config.ini")
 
 
 def main():
@@ -19,7 +24,12 @@ def main():
         Frame(root).pack(side="top", fill="both", expand=True)
         Label(root, text=code).pack()
     else:
-        Pomodoro(root).pack(side="top", fill="both", expand=True)
+        user = User(config.get("HabiticaAPI", "UserID"), config.get("HabiticaAPI", "APIKey"),
+                    bpomo_id=config.get("BasicPomodoros", "PomoID"),
+                    bpomoset_id=config.get("BasicPomodoros", "PomoSetID"))
+        pomo = Pomodoro(root, user).pack(side="top", fill="both", expand=True)
+        pomo.set_config(int(config.get("Pomodoro", "SessionMinutes")), int(config.get("Pomodoro", "ShortBreakMinutes")),
+                        int(config.get("Pomodoro", "LongBreakMinutes")), int(config.get("Pomodoro", "PomoSetAmount")))
     root.mainloop()
 
 

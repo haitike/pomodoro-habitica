@@ -23,7 +23,7 @@ class Task:
             tag_names.append(self.tags[tag_id])
         return tag_names
 
-    def get_info_from_habitica(self):
+    def retrieve_from_habitica(self):
         r = requests.get('https://habitica.com/api/v3/tasks/' + self.id, headers=self.headers)
 
         result = json.loads(r.content)
@@ -36,7 +36,7 @@ class Task:
             return False
 
     def update_info(self):
-        info = self.get_info_from_habitica()
+        info = self.retrieve_from_habitica()
         if info:
             self.text = info["text"]
             self.notes = info["notes"]
@@ -78,7 +78,7 @@ class Habit(Task):
             self.counter_down = counter_down
 
     def update_info(self):
-        info = self.get_info_from_habitica()
+        info = self.retrieve_from_habitica()
         if info:
             self.text = info["text"]
             self.notes, self.key_code = self.extract_key_code(info["notes"])
@@ -112,7 +112,7 @@ class Daily(Task):
 
 
 class User:
-    def __init__(self, api_user, api_key):
+    def __init__(self, api_user, api_key, bpomo_id=None, bpomoset_id=None):
         self.headers = {
             'x-api-user': api_user,
             'x-api-key': api_key,
@@ -121,6 +121,8 @@ class User:
         self.pomo_tags = dict()
         self.habits = list()
         self.dailys = list()
+        self.basic_pomo = None
+        self.basic_pomoset = None
 
         self.username = None
         self.hp = None
@@ -130,9 +132,10 @@ class User:
         self.lvl = None
         self.gold = None
 
-        self.update_pomo_tags()
-        self.update_tasks()
         self.update_profile_stats()
+        self.update_pomo_tags()
+        self.crate_tasks_from_tags()
+        self.create_basic_pomo_habits(bpomo_id, bpomoset_id)
 
     def add_habit(self, habit):
         self.habits.append(habit)
@@ -140,45 +143,13 @@ class User:
     def add_daily(self, daily):
         self.dailys.append(daily)
 
-    def update_pomo_tags(self):
-        r = requests.get('https://habitica.com/api/v3/tags', headers=self.headers)
+    def create_basic_pomo_habits(self, bpomo_id, bpomoset_id):
+        if bpomo_id:
+            self.basic_pomo = Habit(bpomo_id, self.headers, retrieve_info=True)
+        if bpomoset_id:
+            self.basic_pomoset = Habit(bpomoset_id, self.headers, retrieve_info=True)
 
-        result = json.loads(r.content)
-        if r.ok:
-            if result["success"]:
-                for tag in result["data"]:
-                    if ":tomato:" in tag["name"]:
-                        self.pomo_tags[tag["id"]] = tag["name"].replace(":tomato:", "")
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    def update_profile_stats(self):
-        r = requests.get('https://habitica.com/api/v3/user', headers=self.headers)
-
-        result = json.loads(r.content)
-        if r.ok:
-            if result["success"]:
-                # Profile
-                self.username = result["data"]["profile"]["name"]
-
-                # Stats
-                stats = result["data"]["stats"]
-                self.hp = stats["hp"]
-                self.max_hp = stats["maxHealth"]
-                self.exp = stats["exp"]
-                self.exp_next = stats["toNextLevel"]
-                self.lvl = stats["lvl"]
-                self.gold = stats["gp"]
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    def update_tasks(self):
+    def crate_tasks_from_tags(self):
         r = requests.get('https://habitica.com/api/v3/tasks/user', headers=self.headers)
 
         result = json.loads(r.content)
@@ -211,6 +182,56 @@ class User:
                 return False
         else:
             return False
+
+    def update_profile_stats(self):
+        r = requests.get('https://habitica.com/api/v3/user', headers=self.headers)
+
+        result = json.loads(r.content)
+        if r.ok:
+            if result["success"]:
+                # Profile
+                self.username = result["data"]["profile"]["name"]
+
+                # Stats
+                stats = result["data"]["stats"]
+                self.hp = stats["hp"]
+                self.max_hp = stats["maxHealth"]
+                self.exp = stats["exp"]
+                self.exp_next = stats["toNextLevel"]
+                self.lvl = stats["lvl"]
+                self.gold = stats["gp"]
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def update_pomo_tags(self):
+        r = requests.get('https://habitica.com/api/v3/tags', headers=self.headers)
+
+        result = json.loads(r.content)
+        if r.ok:
+            if result["success"]:
+                for tag in result["data"]:
+                    if ":tomato:" in tag["name"]:
+                        self.pomo_tags[tag["id"]] = tag["name"].replace(":tomato:", "")
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def update_taks(self):
+        for index, task in enumerate(self.habits):
+            self.habits[index].update_info()
+        for index, task in enumerate(self.dailys):
+            self.dailys[index].update_info()
+
+    def update_basic_pomo_habits(self):
+        if self.basic_pomo:
+            self.basic_pomo.update_info()
+        if self.basic_pomoset:
+            self.basic_pomoset.update_info()
 
     def score_task(self, id):
         pass

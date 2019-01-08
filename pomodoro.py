@@ -1,24 +1,19 @@
 import tkinter as tk
 from tkinter import messagebox
-import habitica
-import configparser
-
-config = configparser.ConfigParser()
-config.read("config.ini")
 
 
 class Pomodoro(tk.Frame):
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, parent, user, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         
         # Habitica User
-        self.user = habitica.User(config.get("HabiticaAPI", "UserID"), config.get("HabiticaAPI", "APIKey"))
+        self.user = user
 
         # Habitica config
-        self.session_mts = int(config.get("Pomodoro", "SessionMinutes")) * 1
-        self.short_rest_mts = int(config.get("Pomodoro", "ShortBreakMinutes")) * 1
-        self.long_rest_mts = int(config.get("Pomodoro", "LongBreakMinutes")) * 1
-        self.pomo_set_amount = int(config.get("Pomodoro", "PomoSetAmount"))
+        self.session_scs = 25 * self.seconds_in_minute
+        self.short_rest_scs = 5 * self.seconds_in_minute
+        self.long_rest_scs = 25 * self.seconds_in_minute
+        self.pomo_set_amount = 4
 
         # tells the program if the next session is going to be a break or not
         self.is_break = False
@@ -26,6 +21,7 @@ class Pomodoro(tk.Frame):
         # Others
         self.session_counter = 0
         self.job = None
+        self.seconds_in_minute = 1  # Change it for fast tests.
 
         # Widgets left side
         self.user_info_label_list = list()
@@ -34,14 +30,20 @@ class Pomodoro(tk.Frame):
         self.time_label = tk.Label(self, text='00:00')
         self.status_label = tk.Label(self, text='Stopped')
         self.streak_label = tk.Label(self, text='Streak: 0')
-        self.start_btn = tk.Button(self, text="Start", command=self.start)
-        self.interrupt_btn = tk.Button(self, text="Interrupt")
-        self.reset_btn = tk.Button(self, text="Stop", command=self.stop_count)
         self.other_actions_menubtn = tk.Menubutton(self, text="Other actions", relief=tk.RAISED)
         
         # Widgets Right side
+        self.start_btn = tk.Button(self, text="Start", command=self.start)
+        self.interrupt_btn = tk.Button(self, text="Interrupt")
+        self.reset_btn = tk.Button(self, text="Reset", command=self.stop_count)
+
         self.radio_var = tk.IntVar(self)
-        self.habit_radio_list = [tk.Radiobutton(self, text="Basic Pomodoro", variable=self.radio_var, value=0)]
+        pomo_id_exists = config.has_option("HabiticaPomodoro", "PomodoroID")
+        if pomo_id_exists:
+            pomo_hb = config.get("HabiticaPomodoro", "PomodoroID")
+            self.habit_radio_list = [tk.Radiobutton(self, text=pomo_hb.text, variable=self.radio_var, value=pomo_hb.id)]
+        else:
+            self.habit_radio_list = [tk.Radiobutton(self, text="Basic Pomodoro", variable=self.radio_var, value=0)]
         self.habit_counter_label_list = [tk.Label(self)]
         self.habit_dailys_label_list = [tk.Label(self)]
         for habit in self.user.habits:
@@ -66,6 +68,12 @@ class Pomodoro(tk.Frame):
             self.habit_counter_label_list[row_index_right].grid(row=row_index_right+2, column=4, sticky='w')
             self.habit_dailys_label_list[row_index_right].grid(row=row_index_right+2, column=5, sticky='w')
 
+    def set_config(self, sess_mts, srest_mts, lgrest_mts, set_amnt):
+        self.session_scs = sess_mts * self.seconds_in_minute
+        self.short_rest_scs = srest_mts * self.seconds_in_minute
+        self.long_rest_scs = lgrest_mts * self.seconds_in_minute
+        self.pomo_set_amount = set_amnt * self.seconds_in_minute
+
     def count(self, timer):
         if timer <= -1:
 
@@ -83,15 +91,15 @@ class Pomodoro(tk.Frame):
             # prompts and restart cycle
             if prompt_answer == 'yes' and self.session_counter % 4 != 0 and self.is_break:
                 self.after_cancel(self.job)
-                self.count(self.short_rest_mts)
+                self.count(self.short_rest_scs)
             elif prompt_answer == 'yes' and self.session_counter % 4 == 0 and self.is_break:
                 self.after_cancel(self.job)
-                self.count(self.long_rest_mts)
+                self.count(self.long_rest_scs)
             elif prompt_answer == 'no':
                 self.stop_count()
             else:
                 self.session_counter += 1
-                self.count(self.session_mts)
+                self.count(self.session_scs)
             return
 
         m, s = divmod(timer, 60)
@@ -115,4 +123,4 @@ class Pomodoro(tk.Frame):
     def start(self):
         self.session_counter += 1
         self.start_btn.configure(command=tk.DISABLED)
-        self.count(self.session_mts)
+        self.count(self.session_scs)
