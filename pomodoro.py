@@ -10,6 +10,7 @@ class Pomodoro(tk.Frame):
         self.user = user
 
         # Habitica config
+        self.seconds_in_minute = 60  # Change it for fast tests.
         self.session_scs = 25 * self.seconds_in_minute
         self.short_rest_scs = 5 * self.seconds_in_minute
         self.long_rest_scs = 25 * self.seconds_in_minute
@@ -21,7 +22,6 @@ class Pomodoro(tk.Frame):
         # Others
         self.session_counter = 0
         self.job = None
-        self.seconds_in_minute = 1  # Change it for fast tests.
 
         # Widgets left side
         self.user_info_label_list = list()
@@ -38,12 +38,7 @@ class Pomodoro(tk.Frame):
         self.reset_btn = tk.Button(self, text="Reset", command=self.stop_count)
 
         self.radio_var = tk.IntVar(self)
-        pomo_id_exists = config.has_option("HabiticaPomodoro", "PomodoroID")
-        if pomo_id_exists:
-            pomo_hb = config.get("HabiticaPomodoro", "PomodoroID")
-            self.habit_radio_list = [tk.Radiobutton(self, text=pomo_hb.text, variable=self.radio_var, value=pomo_hb.id)]
-        else:
-            self.habit_radio_list = [tk.Radiobutton(self, text="Basic Pomodoro", variable=self.radio_var, value=0)]
+        self.habit_radio_list = [tk.Radiobutton(self, text="Basic Pomodoro", variable=self.radio_var, value=0)]
         self.habit_counter_label_list = [tk.Label(self)]
         self.habit_dailys_label_list = [tk.Label(self)]
         for habit in self.user.habits:

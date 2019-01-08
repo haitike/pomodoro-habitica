@@ -1,6 +1,5 @@
 import json
 import sys
-
 import requests
 
 
@@ -70,8 +69,6 @@ class Habit(Task):
     def __init__(self, id, headers, retrieve_info=True, text=None, notes=None, counter_up=None, counter_down=None):
         Task.__init__(self, id, headers, retrieve_info, text, notes)
         self.type = "Habit"
-        self.key_code = None
-        self.notes, self.key_code = self.extract_key_code(notes)
 
         if not retrieve_info:
             self.counter_up = counter_up
@@ -81,7 +78,7 @@ class Habit(Task):
         info = self.retrieve_from_habitica()
         if info:
             self.text = info["text"]
-            self.notes, self.key_code = self.extract_key_code(info["notes"])
+            self.notes = info["notes"]
             self.counter_up = info["counterUp"]
             self.counter_down = info["counterDown"]
 
@@ -89,18 +86,6 @@ class Habit(Task):
         return "{:<25s}\t{:<6s}\t{}".format(self.text,
                                             str(self.counter_up) + "/" + str(self.counter_down),
                                             ", ".join(self.get_tag_names()))
-
-    def extract_key_code(self,text):
-        new_text = ""
-        key_code = None
-        for line in text.splitlines():
-            if line:
-                if line.startswith("[//]: # ("):
-                    key_code = line.replace(")", "(").split("(")[1]
-                else:
-                    new_text += line + "\n"
-        return new_text, key_code
-
 
 class Daily(Task):
     def __init__(self, id, headers, retrieve_info=True, text=None, notes=None):
