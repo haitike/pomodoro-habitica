@@ -11,7 +11,7 @@ class Task:
         self.tags = list()
 
         if retrieve_info:
-            self.update_info()
+            self.update()
         else:
             self.text = text
             self.notes = notes
@@ -34,7 +34,7 @@ class Task:
         else:
             return False
 
-    def update_info(self):
+    def update(self):
         info = self.retrieve_from_habitica()
         if info:
             self.text = info["text"]
@@ -78,7 +78,7 @@ class Habit(Task):
             self.counter_up = counter_up
             self.counter_down = counter_down
 
-    def update_info(self):
+    def update(self):
         info = self.retrieve_from_habitica()
         if info:
             self.text = info["text"]
@@ -206,29 +206,31 @@ class User:
 
     def update_taks(self):
         for id in self.habits:
-            self.habits[id].update_info()
+            self.habits[id].update()
         for id in self.dailys:
-            self.dailys[id].update_info()
+            self.dailys[id].update()
 
     def update_basic_pomo_habits(self):
         if self.basic_pomo:
-            self.basic_pomo.update_info()
+            self.basic_pomo.update()
         if self.basic_pomoset:
-            self.basic_pomoset.update_info()
+            self.basic_pomoset.update()
 
-    def score_basic_pomo(self):
+    def score_basic_pomo(self, update_task=False):
         drops = list()
         if self.basic_pomo:
             p_score_result = self.basic_pomo.score()
             if p_score_result:
-                self.hp, self.exp, self.lvl, self.gold = p_score_result[0], p_score_result[1], p_score_result[2], \
+                self.hp, self.exp, self.lvl, self.gold = p_score_result[0], p_score_result[1], p_score_result[2],\
                                                          p_score_result[3]
                 if p_score_result[4]:
                     drops.append(p_score_result[4])
+                if update_task:
+                    self.basic_pomo.update()
         return drops
 
-    def score_habit(self, id):
-        drops = self.score_basic_pomo()
+    def score_habit(self, id, update_task=False):
+        drops = self.score_basic_pomo(update_task)
         if id:
             t_score_result = self.habits[id].score()
             if t_score_result:
@@ -236,24 +238,20 @@ class User:
                                                          t_score_result[3]
                 if t_score_result[4]:
                     drops.append(t_score_result[4])
+                if update_task:
+                    self.habits[id].update()
         self.check_dailies(id)
         return drops
 
     def check_dailies(self, id):
         pass
 
-    def get_stats_text(self, add_tabs=False):
-        t = ""
-        if add_tabs: t = "\t"
-        text = "{} (lv{:.0f})\n".format(self.username, self.lvl)
-        text += "{}HP: {:.0f} / {}\n".format(t, self.hp, self.max_hp)
-        text += "{}Exp: {:.0f} / {}\n".format(t, self.exp, self.exp_next)
-        text += "{}Gold: {:.0f}".format(t, self.gold)
-        return text
-
     # For tests
     def get_all_text(self):
-        text = self.get_stats_text(add_tabs=True)
+        text = "{} (lv{:.0f})\n".format(self.username, self.lvl)
+        text += "\tHP: {:.0f} / {}\n".format(self.hp, self.max_hp)
+        text += "\tExp: {:.0f} / {}\n".format(self.exp, self.exp_next)
+        text += "\tGold: {:.0f}".format(self.gold)
 
         if self.basic_pomo:
             text += "\nBasic Pomodoros:\n"
