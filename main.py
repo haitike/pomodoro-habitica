@@ -38,7 +38,6 @@ def main():
         Label(root, text=code).pack()
     else:
         user = User(hab_id, hab_key, bpomo_id, bpomoset_id)
-        print(user.get_all_text()) #test
         pomo = Pomodoro(root, user)
         pomo.pack(side="top", fill="both", expand=True)
         pomo.set_config(sess_mts, sbreak_mts, lbreak_mts, pomoset_amnt)

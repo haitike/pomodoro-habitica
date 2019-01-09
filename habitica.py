@@ -83,8 +83,8 @@ class Habit(Task):
         if info:
             self.text = info["text"]
             self.notes = info["notes"]
-            self.counter_up = info["counterUp"]
-            self.counter_down = info["counterDown"]
+            self.counter_up = int(info["counterUp"])
+            self.counter_down = int(info["counterDown"])
 
     def get_line_text(self):
         return "{:<25s}\t{:<6s}\t{}".format(self.text,
@@ -124,8 +124,13 @@ class User:
 
         self.update_profile_stats()
         self.update_pomo_tags()
-        self.crate_tasks_from_tags()
+        self.create_tasks_from_tags()
         self.create_basic_pomo_habits(bpomo_id, bpomoset_id)
+
+        # verbose
+        self.v = True
+        if self.v: print(self.get_all_text())
+
 
     def create_basic_pomo_habits(self, bpomo_id, bpomoset_id):
         if bpomo_id:
@@ -134,7 +139,7 @@ class User:
         if bpomoset_id:
             self.basic_pomoset = Habit(bpomoset_id, self.headers, retrieve_info=True)
 
-    def crate_tasks_from_tags(self):
+    def create_tasks_from_tags(self):
         r = requests.get('https://habitica.com/api/v3/tasks/user', headers=self.headers)
 
         result = json.loads(r.content)
@@ -150,7 +155,7 @@ class User:
                             if task["type"] == "habit":
                                 new_task = Habit(task["id"], self.headers, retrieve_info=False,
                                                  text=task["text"], notes=task["notes"],
-                                                 counter_up=task["counterUp"], counter_down=task["counterDown"])
+                                                 counter_up=int(task["counterUp"]), counter_down=int(task["counterDown"]))
                                 if new_task:
                                     new_task.tags = new_tag_list
                                     self.habits[task["id"]] = new_task
@@ -216,35 +221,51 @@ class User:
         if self.basic_pomoset:
             self.basic_pomoset.update()
 
-    def score_basic_pomo(self, update_task=False):
+    def score_basic_pomo(self, set_interval=None, update_tasks=False):
         drops = list()
         if self.basic_pomo:
             p_score_result = self.basic_pomo.score()
+            if self.v: print("Basic pomo scored [{}]: {}".format(self.basic_pomo.counter_up, p_score_result))
             if p_score_result:
                 self.hp, self.exp, self.lvl, self.gold = p_score_result[0], p_score_result[1], p_score_result[2],\
                                                          p_score_result[3]
                 if p_score_result[4]:
                     drops.append(p_score_result[4])
-                if update_task:
+                if update_tasks:
                     self.basic_pomo.update()
+                    if self.v: print("Basic pomo was updated: {}".format(self.basic_pomo.get_line_text()))
+
+                # Updating Pomodoro Set
+                if self.basic_pomoset and set_interval:
+                    if self.basic_pomo.counter_up % set_interval == 0:
+                        set_score_result = self.basic_pomoset.score()
+                        if self.v: print("Pomo Set scored [{}]: {}".format(self.basic_pomoset.counter_up, set_score_result))
+                        if set_score_result:
+                            self.hp, self.exp, self.lvl, self.gold = set_score_result[0], set_score_result[1], \
+                                                                     set_score_result[2], set_score_result[3]
+                            if set_score_result[4]:
+                                drops.append(p_score_result[4])
+                            if update_tasks:
+                                self.basic_pomoset.update()
+                                if self.v: print("Pomo Set was updated: {}".format(self.basic_pomoset.get_line_text()))
+        if self.v: print("Basic/Set pomo drops: {}".format(drops))
         return drops
 
-    def score_habit(self, id, update_task=False):
-        drops = self.score_basic_pomo(update_task)
-        if id:
+    def score_habit(self, id, update_tasks=False):
+        drops = list()
+        if self.habits[id]:
             t_score_result = self.habits[id].score()
+            if self.v: print("{} scored [{}]: {}".format(self.habits[id].text, self.habits[id].counter_up, t_score_result))
             if t_score_result:
                 self.hp, self.exp, self.lvl, self.gold = t_score_result[0], t_score_result[1], t_score_result[2], \
                                                          t_score_result[3]
                 if t_score_result[4]:
                     drops.append(t_score_result[4])
-                if update_task:
+                if update_tasks:
                     self.habits[id].update()
-        self.check_dailies(id)
+                    if self.v: print("{} was updated: {}".format(self.habits[id].text, self.habits[id].get_line_text()))
+        if self.v: print("Habit/Dailys drops: {}".format(drops))
         return drops
-
-    def check_dailies(self, id):
-        pass
 
     # For tests
     def get_all_text(self):
@@ -273,75 +294,6 @@ class User:
             text += "\tNo habits\n"
 
         return text
-
-
-def update_pomodoros(pomo_id, pomo_set_id=None, pomo_set_interval=4):
-    # Scoring the basic Pomodoro
-    r = score_task(pomo_id, True)
-
-    if r:
-        # Updating Pomodoro Set
-        if pomo_set_id:
-            if int(get_task(pomo_id)["counterUp"]) % pomo_set_interval == 0:
-                set_r = score_task(pomo_set_id, True)
-                if set_r:
-                    print("You completed a new Pomodoro Set!")
-                    print_item_drop(set_r)
-
-        pomo_count = get_task(pomo_id)["counterUp"]
-        if pomo_set_id:
-            pomo_set_count = get_task(pomo_set_id)["counterUp"]
-            print("Pomodoro: {} | Pomodoro Set: {}".format(pomo_count, pomo_set_count))
-        else:
-            print("Pomodoro: {}".format(pomo_count))
-        print_item_drop(r)
-    else:
-        print("Habitica API Error when scoring")
-
-    return r
-
-
-def update_habit_and_daily(task_id, daily_id=None, daily_task_list=None, pomo_set_interval=4):
-    # Scoring the task
-    r = score_task(task_id, True)
-
-    if r:
-        print("La tarea fue puntuada correctamente.")
-        print("\tHP: {}".format(r["hp"]))
-        print("\tExp (lv {}): {}".format(r["lvl"], r["exp"]))
-        print_item_drop(r)
-
-        #Updating dailies
-        if daily_id:
-            if daily_task_list:
-                total_count = 0
-                tasks_array = ""
-                for task in daily_task_list:
-                    daily_name = daily_task_list[task]["daily"]
-                    count_r = get_task(daily_task_list[task]["id"])
-                    total_count += count_r["counterUp"]
-                    tasks_array += "\n\tTotal: {:02d} | {}".format(count_r["counterUp"], count_r["text"])
-                if get_task(daily_id)["completed"]:
-                    print("'{}' is already completed".format(daily_name))
-                else:
-                    print("Daily associated: {}".format(daily_name), end="")
-                    print(tasks_array)
-                    print("\t===============\n\tTotal: {:02d} / {:02d}".format(total_count, pomo_set_interval))
-                    if total_count >= pomo_set_interval:
-                        d_r = score_task(daily_id, True)
-                        if d_r:
-                            print("Daily task '{}' was completed!".format(daily_name))
-                        else:
-                            print("Habitica API Error when scoring the daily")
-
-            else:
-                print("Error: A list of tasks sharing the same daily was not send")
-
-    else:
-        print("Habitica API Error when scoring the habit")
-
-    return r
-
 
 
 def main():

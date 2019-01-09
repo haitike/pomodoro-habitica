@@ -151,9 +151,10 @@ class Pomodoro(tk.Frame):
 
         if self.radio_var.get() != "bpomo_noid":
             if self.radio_var.get() == "bpomo_id":
-                drops = self.user.score_basic_pomo(update_task=True)
+                drops = self.user.score_basic_pomo(set_interval=self.pomo_set_amount, update_tasks=True)
             else:
-                drops = self.user.score_habit(self.radio_var.get(), update_task=True)
+                drops = self.user.score_basic_pomo(set_interval=self.pomo_set_amount, update_tasks=True)
+                drops += self.user.score_habit(self.radio_var.get(), set_interval=self.pomo_set_amount, update_tasks=True)
 
             if self.user.lvl > lvl:
                 success_text += "Level up! You are now level {}!!".format(self.user.lvl)
