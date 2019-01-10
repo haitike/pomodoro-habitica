@@ -3,7 +3,7 @@
 
 import sys
 from tkinter import Tk
-from pomodoro import Pomodoro
+from pomodoro_window import Pomodoro
 from habitica import User
 import configparser
 

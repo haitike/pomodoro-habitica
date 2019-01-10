@@ -1,10 +1,12 @@
 import tkinter as tk
 from tkinter import messagebox
+from config_tasks_window import ConfigTasks
 
 
 class Pomodoro(tk.Frame):
     def __init__(self, parent, user, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
         
         # Habitica User
         self.user = user
@@ -23,6 +25,9 @@ class Pomodoro(tk.Frame):
         self.session_counter = 0
         self.job = None
 
+        # Config Task Window
+        self.config_task_window = None
+
         # Widgets left side
         self.user_name_label = tk.Label(self, text="")
         self.user_hp_label = tk.Label(self, text="")
@@ -32,7 +37,7 @@ class Pomodoro(tk.Frame):
         self.time_label = tk.Label(self, text='00:00')
         self.status_label = tk.Label(self, text='Stopped')
         self.streak_label = tk.Label(self, text='Streak: 0')
-        self.other_actions_menubtn = tk.Menubutton(self, text="Other actions", relief=tk.RAISED)
+        self.config_tasks_btn = tk.Button(self, text="Config Tasks", command=self.new_config_task_window)
 
         # Widgets Right side
         self.start_btn = tk.Button(self, text="Start", command=self.start)
@@ -67,7 +72,7 @@ class Pomodoro(tk.Frame):
         self.time_label.grid(row=6, column=1, columnspan=2, rowspan=2, sticky='nwse')
         self.status_label.grid(row=8, column=1, sticky='w')
         self.streak_label.grid(row=9, column=1, sticky='w')
-        self.other_actions_menubtn.grid(row=11, column=1)
+        self.config_tasks_btn.grid(row=11, column=1)
 
         # Grid Right side
         self.start_btn.grid(row=1, column=3)
@@ -124,6 +129,12 @@ class Pomodoro(tk.Frame):
         else:
             self.streak_label.configure(text='Streak: {}'.format(self.session_counter))
         self.job = self.after(1000, self.count, timer - 1)
+
+    def new_config_task_window(self):
+        if self.config_task_window is None or not self.config_task_window.winfo_exists():
+            self.config_task_window = tk.Toplevel(self.parent)
+            self.config_task_frame = ConfigTasks(self.config_task_window, self.user.get_all_tasks())
+            self.config_task_frame.pack(side="top", fill="both", expand=True)
 
     def update_stats_labels(self):
         self.user_name_label.configure(text="{} (lv{:.0f})".format(self.user.username, self.user.lvl))

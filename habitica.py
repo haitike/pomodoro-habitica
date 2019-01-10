@@ -139,6 +139,33 @@ class User:
         if bpomoset_id:
             self.basic_pomoset = Habit(bpomoset_id, self.headers, retrieve_info=True)
 
+    def get_all_tasks(self):
+        r = requests.get('https://habitica.com/api/v3/tasks/user', headers=self.headers)
+
+        result = json.loads(r.content)
+        if r.ok:
+            if result["success"]:
+                habit_list = dict()
+                daily_list = dict()
+                for task in result["data"]:
+                    if task["type"] == "habit":
+                        new_task = Habit(task["id"], self.headers, retrieve_info=False,
+                                         text=task["text"], notes=task["notes"],
+                                         counter_up=int(task["counterUp"]),
+                                         counter_down=int(task["counterDown"]))
+                        if new_task:
+                            habit_list[task["id"]] = new_task
+                    elif task["type"] == "daily":
+                        new_task = Daily(task["id"], self.headers, retrieve_info=False,
+                                         text=task["text"], notes=task["notes"])
+                        if new_task:
+                            daily_list[task["id"]] = new_task
+                return habit_list, daily_list
+            else:
+                return False
+        else:
+            return False
+
     def create_tasks_from_tags(self):
         r = requests.get('https://habitica.com/api/v3/tasks/user', headers=self.headers)
 
@@ -264,6 +291,33 @@ class User:
                 if update_tasks:
                     self.habits[id].update()
                     if self.v: print("{} was updated: {}".format(self.habits[id].text, self.habits[id].get_line_text()))
+
+                # # Updating dailies
+                # if daily_id:
+                #     if daily_task_list:
+                #         total_count = 0
+                #         tasks_array = ""
+                #         for task in daily_task_list:
+                #             daily_name = daily_task_list[task]["daily"]
+                #             count_r = get_task(daily_task_list[task]["id"])
+                #             total_count += count_r["counterUp"]
+                #             tasks_array += "\n\tTotal: {:02d} | {}".format(count_r["counterUp"], count_r["text"])
+                #         if get_task(daily_id)["completed"]:
+                #             print("'{}' is already completed".format(daily_name))
+                #         else:
+                #             print("Daily associated: {}".format(daily_name), end="")
+                #             print(tasks_array)
+                #             print("\t===============\n\tTotal: {:02d} / {:02d}".format(total_count, pomo_set_interval))
+                #             if total_count >= pomo_set_interval:
+                #                 d_r = score_task(daily_id, True)
+                #                 if d_r:
+                #                     print("Daily task '{}' was completed!".format(daily_name))
+                #                 else:
+                #                     print("Habitica API Error when scoring the daily")
+                #
+                #     else:
+                #         print("Error: A list of tasks sharing the same daily was not send")
+
         if self.v: print("Habit/Dailys drops: {}".format(drops))
         return drops
 
