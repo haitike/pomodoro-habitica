@@ -12,7 +12,7 @@ class Pomodoro(tk.Frame):
         self.user = user
 
         # Habitica config
-        self.seconds_in_minute = 1  # Change it for fast tests.
+        self.seconds_in_minute = 60  # Change it for fast tests.
         self.session_scs = 25 * self.seconds_in_minute
         self.short_rest_scs = 5 * self.seconds_in_minute
         self.long_rest_scs = 25 * self.seconds_in_minute
@@ -63,6 +63,10 @@ class Pomodoro(tk.Frame):
             self.habit_radio_list.append(tk.Radiobutton(self, text=self.user.habits[id].text, variable=self.radio_var, value=id))
             self.habit_counter_label_list.append(tk.Label(self, text="{}/{}".format(self.user.habits[id].counter_up, self.user.habits[id].counter_down)))
             self.habit_dailys_label_list.append(tk.Label(self, text=",".join(self.user.habits[id].get_tag_names())))
+        # Hidden
+        self.current_task_info_label = tk.Label(self, text="")
+        self.current_task_counter_label = tk.Label(self, text="")
+        self.current_task_notes_label = tk.Label(self, text="")
 
         # Grid Left side
         self.user_name_label.grid(row=1, column=1, sticky='w')
@@ -86,6 +90,13 @@ class Pomodoro(tk.Frame):
             self.habit_radio_list[row_index_right].grid(row=row_index_right+5, column=3, sticky='w')
             self.habit_counter_label_list[row_index_right].grid(row=row_index_right+5, column=4, sticky='w')
             self.habit_dailys_label_list[row_index_right].grid(row=row_index_right+5, column=5, sticky='w')
+
+        # Right hidden
+        self.current_task_info_label.grid(row=2, column=3, sticky="w")
+        self.current_task_counter_label.grid(row=2, column=4, sticky="w")
+        self.current_task_notes_label.grid(row=4, column=3, columnspan=3, sticky="w")
+        self.current_task_info_label.grid_remove()
+        self.current_task_notes_label.grid_remove()
 
     def set_config(self, sess_mts, srest_mts, lgrest_mts, set_amnt):
         self.session_scs = sess_mts * self.seconds_in_minute
@@ -195,12 +206,17 @@ class Pomodoro(tk.Frame):
             self.habit_counter_label_list[index].grid()
             self.habit_dailys_label_list[index].grid()
         #self.start_btn.configure(text="Start", command=lambda: self.start())
+        self.current_task_info_label.configure(text="")
+        self.current_task_counter_label.configure(text="")
+        self.current_task_notes_label.configure(text="")
+        self.current_task_info_label.grid_remove()
+        self.current_task_counter_label.grid_remove()
+        self.current_task_notes_label.grid_remove()
 
     # starts counting loop
     def start(self):
         self.session_counter += 1
         self.start_btn.grid_remove()
-        #self.start_btn.configure(command=tk.DISABLED)
         self.count(self.session_scs)
         self.bpomo_radio.grid_remove()
         self.bpomo_counter_label.grid_remove()
@@ -210,3 +226,18 @@ class Pomodoro(tk.Frame):
             self.habit_radio_list[index].grid_remove()
             self.habit_counter_label_list[index].grid_remove()
             self.habit_dailys_label_list[index].grid_remove()
+        # self.start_btn.configure(command=tk.DISABLED)
+        if self.radio_var.get() == "bpomo_noid":
+            self.current_task_info_label.configure(text="Basic Pomodoro")
+        elif self.radio_var.get() == "bpomo_id":
+            self.current_task_info_label.configure(text=self.user.basic_pomo.text)
+            self.current_task_counter_label.configure(text="{}/{}".format(self.user.basic_pomoset.counter_up,
+                                                                          self.user.basic_pomoset.counter_down))
+        else:
+            self.current_task_info_label.configure(text=self.user.habits[self.radio_var.get()].text)
+            self.current_task_counter_label.configure(text="{}/{}".format(self.user.habits[self.radio_var.get()].counter_up,
+                                                                          self.user.habits[self.radio_var.get()].counter_down))
+            self.current_task_notes_label.configure(text=self.user.habits[self.radio_var.get()].notes)
+        self.current_task_info_label.grid()
+        self.current_task_counter_label.grid()
+        self.current_task_notes_label.grid()

@@ -248,7 +248,7 @@ class User:
         if self.basic_pomoset:
             self.basic_pomoset.update()
 
-    def score_basic_pomo(self, set_interval=None, update_tasks=False):
+    def score_basic_pomo(self, set_interval, update_tasks=False):
         drops = list()
         if self.basic_pomo:
             p_score_result = self.basic_pomo.score()
@@ -278,7 +278,7 @@ class User:
         if self.v: print("Basic/Set pomo drops: {}".format(drops))
         return drops
 
-    def score_habit(self, id, update_tasks=False):
+    def score_habit(self, id, set_interval, update_tasks=False):
         drops = list()
         if self.habits[id]:
             t_score_result = self.habits[id].score()
