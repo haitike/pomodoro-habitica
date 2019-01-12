@@ -1,48 +1,69 @@
 #!/usr/bin/python3
-
-
 import sys
+import tkinter as tk
 from tkinter import Tk
-from pomodoro_window import Pomodoro
-from habitica import User
+import pomodoro_window
+import config_tasks_window
+import api_detail_window
+from habitica import User, get_all_tasks
 import configparser
-
 config = configparser.ConfigParser()
 config.read("config.ini")
-
-# Config variables
-hab_id = config.get("HabiticaAPI", "UserID")
-hab_key = config.get("HabiticaAPI", "APIKey")
-sess_mts = int(config.get("Pomodoro", "SessionMinutes"))
-sbreak_mts = int(config.get("Pomodoro", "ShortBreakMinutes"))
-lbreak_mts = int(config.get("Pomodoro", "LongBreakMinutes"))
-pomoset_amnt = int(config.get("Pomodoro", "PomoSetAmount"))
-bpomo_id=None
-bpomoset_id=None
-if config.has_option("BasicPomodoros", "PomoID"):
-    bpomo_id = config.get("BasicPomodoros", "PomoID")
-if config.has_option("BasicPomodoros", "PomoSetID"):
-    bpomoset_id = config.get("BasicPomodoros", "PomoSetID")
 
 def main():
     args = sys.argv[1:]
 
-    root = Tk()
-    root.title("Pomodoro Habitica")
-    # root.geometry('400x360')
-    if args:
-        # TODO: This is temporal. Pass argv in future.
-        from tkinter import Frame, Label
-        code = args[0]
-        Frame(root).pack(side="top", fill="both", expand=True)
-        Label(root, text=code).pack()
-    else:
-        user = User(hab_id, hab_key, bpomo_id, bpomoset_id)
-        pomo = Pomodoro(root, user)
-        pomo.pack(side="top", fill="both", expand=True)
-        pomo.set_config(sess_mts, sbreak_mts, lbreak_mts, pomoset_amnt)
-    root.mainloop()
+    user = User(verbose=True)
+    if all([config.has_section("HabiticaAPI"), config.has_option("HabiticaAPI", "UserID"), config.has_option("HabiticaAPI", "APIKey")]):
+        user.set_headers(config.get("HabiticaAPI", "UserID"), config.get("HabiticaAPI", "APIKey"))
+        user.update_profile_stats()
 
+    if not user.username:
+        root = Tk()
+        root.title("API information")
+        api_detail_window.APIDetails(root, user).pack(side="top", fill="both", expand=True)
+        root.mainloop()
+
+    if user.username:
+        if not all([config.has_section("HabitList"), config.has_section("HabitDailys"), config.has_section("HabitCodes")]):
+            root = Tk()
+            root.title("Task configuration")
+            cwindow = config_tasks_window.ConfigTasks(root, user.headers)
+            cwindow.pack(side="top", fill="both", expand=True)
+            root.mainloop()
+            # Updating config after writting a lot of stuff in the window
+            config.read("config.ini")
+
+        if all([config.has_section("HabitList"), config.has_section("HabitDailys"), config.has_section("HabitCodes")]):
+            sess_mts = 25
+            sbreak_mts = 5
+            lbreak_mts = 25
+            pomoset_amnt = 4
+            if config.has_section("Pomodoro"):
+                sess_mts = int(config.get("Pomodoro", "SessionMinutes"))
+                sbreak_mts = int(config.get("Pomodoro", "ShortBreakMinutes"))
+                lbreak_mts = int(config.get("Pomodoro", "LongBreakMinutes"))
+                pomoset_amnt = int(config.get("Pomodoro", "PomoSetAmount"))
+            bpomo_id = None
+            bpomoset_id = None
+            if config.has_option("BasicPomodoros", "PomoID"):
+                bpomo_id = config.get("BasicPomodoros", "PomoID")
+            if config.has_option("BasicPomodoros", "PomoSetID"):
+                bpomoset_id = config.get("BasicPomodoros", "PomoSetID")
+
+            root = Tk()
+            root.title("Pomodoro Habitica")
+            if args:
+                # TODO: This is temporal. Pass argv in future.
+                code = args[0]
+                tk.Frame(root).pack(side="top", fill="both", expand=True)
+                tk.Label(root, text=code).pack()
+            else:
+                user.create_basic_pomo_habits(bpomo_id, bpomoset_id)
+                pomo = pomodoro_window.Pomodoro(root, user)
+                pomo.pack(side="top", fill="both", expand=True)
+                pomo.set_config(sess_mts, sbreak_mts, lbreak_mts, pomoset_amnt)
+            root.mainloop()
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import config_tasks_window
+from config_tasks_window import get_all_tasks
 
 
 class Pomodoro(tk.Frame):
@@ -144,7 +145,7 @@ class Pomodoro(tk.Frame):
     def new_config_task_window(self):
         if self.config_task_window is None or not self.config_task_window.winfo_exists():
             self.config_task_window = tk.Toplevel(self)
-            ctask_frame = config_tasks_window.ConfigTasks(self.config_task_window, self.user.get_all_tasks())
+            ctask_frame = config_tasks_window.ConfigTasks(self.config_task_window, self.user.headers)
             ctask_frame.pack(side="top", fill="both", expand=True)
 
     def update_stats_labels(self):

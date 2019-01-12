@@ -3,10 +3,13 @@ import configparser
 from functools import partial
 from tkinter.font import nametofont
 
+from habitica import get_all_tasks
+
 class ConfigTasks(tk.Frame):
-    def __init__(self, parent, tasks, *args, **kwargs):
+    def __init__(self, parent, headers, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
-        habits, dailys = tasks
+        self.parent = parent
+        habits, dailys = get_all_tasks(headers)
 
         # Config
         self.config = configparser.ConfigParser()
@@ -132,3 +135,5 @@ class ConfigTasks(tk.Frame):
 
         with open('config.ini', 'w') as configfile:
             self.config.write(configfile)
+
+        self.parent.destroy()

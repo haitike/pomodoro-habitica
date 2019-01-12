@@ -102,12 +102,10 @@ class Daily(Task):
 
 
 class User:
-    def __init__(self, api_user, api_key, bpomo_id=None, bpomoset_id=None):
-        self.headers = {
-            'x-api-user': api_user,
-            'x-api-key': api_key,
-        }
+    def __init__(self, verbose=False):
+        self.v = verbose
 
+        self.headers = None
         self.pomo_tags = dict()
         self.habits = dict()
         self.dailys = dict()
@@ -122,14 +120,17 @@ class User:
         self.lvl = None
         self.gold = None
 
-        self.update_profile_stats()
-        self.update_pomo_tags()
-        self.create_tasks_from_tags()
-        self.create_basic_pomo_habits(bpomo_id, bpomoset_id)
+        #success = self.update_profile_stats()
+        #self.update_pomo_tags()
+        #self.create_tasks_from_tags()
 
         # verbose
-        self.v = True
-        if self.v: print(self.get_all_text())
+
+    def set_headers(self, api_user, api_key):
+        self.headers = {
+            'x-api-user': api_user,
+            'x-api-key': api_key,
+        }
 
     def create_basic_pomo_habits(self, bpomo_id, bpomoset_id):
         if bpomo_id:
@@ -137,33 +138,6 @@ class User:
 
         if bpomoset_id:
             self.basic_pomoset = Habit(bpomoset_id, self.headers, retrieve_info=True)
-
-    def get_all_tasks(self):
-        r = requests.get('https://habitica.com/api/v3/tasks/user', headers=self.headers)
-
-        result = json.loads(r.content)
-        if r.ok:
-            if result["success"]:
-                habit_list = dict()
-                daily_list = dict()
-                for task in result["data"]:
-                    if task["type"] == "habit":
-                        new_task = Habit(task["id"], self.headers, retrieve_info=False,
-                                         text=task["text"], notes=task["notes"],
-                                         counter_up=int(task["counterUp"]),
-                                         counter_down=int(task["counterDown"]))
-                        if new_task:
-                            habit_list[task["id"]] = new_task
-                    elif task["type"] == "daily":
-                        new_task = Daily(task["id"], self.headers, retrieve_info=False,
-                                         text=task["text"], notes=task["notes"])
-                        if new_task:
-                            daily_list[task["id"]] = new_task
-                return habit_list, daily_list
-            else:
-                return False
-        else:
-            return False
 
     def create_tasks_from_tags(self):
         r = requests.get('https://habitica.com/api/v3/tasks/user', headers=self.headers)
@@ -214,6 +188,12 @@ class User:
                 self.exp_next = stats["toNextLevel"]
                 self.lvl = stats["lvl"]
                 self.gold = stats["gp"]
+                if self.v:
+                    text = "{} (lv{:.0f})\n".format(self.username, self.lvl)
+                    text += "\tHP: {:.0f} / {}\n".format(self.hp, self.max_hp)
+                    text += "\tExp: {:.0f} / {}\n".format(self.exp, self.exp_next)
+                    text += "\tGold: {:.0f}".format(self.gold)
+                    print(text)
                 return True
             else:
                 return False
@@ -450,3 +430,31 @@ def main():
             print("break")
         else:
             print("Warning: Bad state")
+
+
+def get_all_tasks(headers):
+    r = requests.get('https://habitica.com/api/v3/tasks/user', headers=headers)
+
+    result = json.loads(r.content)
+    if r.ok:
+        if result["success"]:
+            habit_list = dict()
+            daily_list = dict()
+            for task in result["data"]:
+                if task["type"] == "habit":
+                    new_task = Habit(task["id"], headers, retrieve_info=False,
+                                     text=task["text"], notes=task["notes"],
+                                     counter_up=int(task["counterUp"]),
+                                     counter_down=int(task["counterDown"]))
+                    if new_task:
+                        habit_list[task["id"]] = new_task
+                elif task["type"] == "daily":
+                    new_task = Daily(task["id"], headers, retrieve_info=False,
+                                     text=task["text"], notes=task["notes"])
+                    if new_task:
+                        daily_list[task["id"]] = new_task
+            return habit_list, daily_list
+        else:
+            return False
+    else:
+        return False
