@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-from config_tasks_window import ConfigTasks
+import config_tasks_window
 
 
 class Pomodoro(tk.Frame):
@@ -25,7 +25,7 @@ class Pomodoro(tk.Frame):
         self.session_counter = 0
         self.job = None
 
-        # Config Task Window
+        # Config Task Window (Atribute used for checking if it is already created)
         self.config_task_window = None
 
         # Widgets left side
@@ -37,12 +37,12 @@ class Pomodoro(tk.Frame):
         self.time_label = tk.Label(self, text='00:00')
         self.status_label = tk.Label(self, text='Stopped')
         self.streak_label = tk.Label(self, text='Streak: 0')
-        self.config_tasks_btn = tk.Button(self, text="Config Tasks", command=self.new_config_task_window)
+        config_tasks_btn = tk.Button(self, text="Config Tasks", command=self.new_config_task_window)
 
         # Widgets Right side
         self.start_btn = tk.Button(self, text="Start", command=self.start)
         self.interrupt_btn = tk.Button(self, text="Interrupt")
-        self.reset_btn = tk.Button(self, text="Reset", command=self.stop_count)
+        reset_btn = tk.Button(self, text="Reset", command=self.stop_count)
         self.radio_var = tk.StringVar()
         self.radio_var.set("bpomo_noid")
         self.bpomo_radio = tk.Radiobutton(self, text="Basic Pomodoro", variable=self.radio_var, value="bpomo_noid")
@@ -76,12 +76,12 @@ class Pomodoro(tk.Frame):
         self.time_label.grid(row=6, column=1, columnspan=2, rowspan=2, sticky='nwse')
         self.status_label.grid(row=8, column=1, sticky='w')
         self.streak_label.grid(row=9, column=1, sticky='w')
-        self.config_tasks_btn.grid(row=11, column=1)
+        config_tasks_btn.grid(row=11, column=1)
 
         # Grid Right side
         self.start_btn.grid(row=1, column=3)
         self.interrupt_btn.grid(row=1, column=4)
-        self.reset_btn.grid(row=1, column=5)
+        reset_btn.grid(row=1, column=5)
         self.bpomo_radio.grid(row=2, column=3, sticky='w')
         self.bpomo_counter_label.grid(row=2, column=4, sticky='w')
         self.bpomoset_label.grid(row=3, column=3, sticky='w')
@@ -143,9 +143,9 @@ class Pomodoro(tk.Frame):
 
     def new_config_task_window(self):
         if self.config_task_window is None or not self.config_task_window.winfo_exists():
-            self.config_task_window = tk.Toplevel(self.parent)
-            self.config_task_frame = ConfigTasks(self.config_task_window, self.user.get_all_tasks())
-            self.config_task_frame.pack(side="top", fill="both", expand=True)
+            self.config_task_window = tk.Toplevel(self)
+            ctask_frame = config_tasks_window.ConfigTasks(self.config_task_window, self.user.get_all_tasks())
+            ctask_frame.pack(side="top", fill="both", expand=True)
 
     def update_stats_labels(self):
         self.user_name_label.configure(text="{} (lv{:.0f})".format(self.user.username, self.user.lvl))

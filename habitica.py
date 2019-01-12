@@ -131,7 +131,6 @@ class User:
         self.v = True
         if self.v: print(self.get_all_text())
 
-
     def create_basic_pomo_habits(self, bpomo_id, bpomoset_id):
         if bpomo_id:
             self.basic_pomo = Habit(bpomo_id, self.headers, retrieve_info=True)
