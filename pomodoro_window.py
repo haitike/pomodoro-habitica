@@ -63,10 +63,15 @@ class Pomodoro(tk.Frame):
         for id in self.user.habits:
             self.habit_radio_list.append(tk.Radiobutton(self, text=self.user.habits[id].text, variable=self.radio_var, value=id))
             self.habit_counter_label_list.append(tk.Label(self, text="{}/{}".format(self.user.habits[id].counter_up, self.user.habits[id].counter_down)))
-            self.habit_dailys_label_list.append(tk.Label(self, text=",".join(self.user.habits[id].get_tag_names())))
+            self.habit_dailys_label_list.append(tk.Label(self, text=""))
+            if self.user.habits[id].daily:
+                self.habit_dailys_label_list.append(tk.Label(self, text=self.user.habits[id].daily.text))
+            else:
+                self.habit_dailys_label_list.append(tk.Label(self, text=""))
         # Hidden
         self.current_task_info_label = tk.Label(self, text="")
         self.current_task_counter_label = tk.Label(self, text="")
+        self.current_task_code_label = tk.Label(self, text="")
         self.current_task_notes_label = tk.Label(self, text="")
 
         # Grid Left side
@@ -95,8 +100,11 @@ class Pomodoro(tk.Frame):
         # Right hidden
         self.current_task_info_label.grid(row=2, column=3, sticky="w")
         self.current_task_counter_label.grid(row=2, column=4, sticky="w")
-        self.current_task_notes_label.grid(row=4, column=3, columnspan=3, sticky="w")
+        self.current_task_code_label.grid(row=3, column=3, sticky="w")
+        self.current_task_notes_label.grid(row=5, column=3, columnspan=3, sticky="w")
         self.current_task_info_label.grid_remove()
+        self.current_task_counter_label.grid_remove()
+        self.current_task_code_label.grid_remove()
         self.current_task_notes_label.grid_remove()
 
     def set_config(self, sess_mts, srest_mts, lgrest_mts, set_amnt):
@@ -209,9 +217,11 @@ class Pomodoro(tk.Frame):
         #self.start_btn.configure(text="Start", command=lambda: self.start())
         self.current_task_info_label.configure(text="")
         self.current_task_counter_label.configure(text="")
+        self.current_task_code_label.configure(text="")
         self.current_task_notes_label.configure(text="")
         self.current_task_info_label.grid_remove()
         self.current_task_counter_label.grid_remove()
+        self.current_task_code_label.grid_remove()
         self.current_task_notes_label.grid_remove()
 
     # starts counting loop
@@ -238,7 +248,10 @@ class Pomodoro(tk.Frame):
             self.current_task_info_label.configure(text=self.user.habits[self.radio_var.get()].text)
             self.current_task_counter_label.configure(text="{}/{}".format(self.user.habits[self.radio_var.get()].counter_up,
                                                                           self.user.habits[self.radio_var.get()].counter_down))
+            if self.user.habits[self.radio_var.get()].code:
+               self.current_task_code_label.configure(text="Console code: {}".format(self.user.habits[self.radio_var.get()].code))
             self.current_task_notes_label.configure(text=self.user.habits[self.radio_var.get()].notes)
         self.current_task_info_label.grid()
         self.current_task_counter_label.grid()
+        self.current_task_code_label.grid()
         self.current_task_notes_label.grid()

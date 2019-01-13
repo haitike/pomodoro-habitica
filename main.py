@@ -5,7 +5,7 @@ from tkinter import Tk
 import pomodoro_window
 import config_tasks_window
 import api_detail_window
-from habitica import User, get_all_tasks
+import habitica
 import configparser
 config = configparser.ConfigParser()
 config.read("config.ini")
@@ -13,7 +13,7 @@ config.read("config.ini")
 def main():
     args = sys.argv[1:]
 
-    user = User(verbose=True)
+    user = habitica.User(verbose=True)
     if all([config.has_section("HabiticaAPI"), config.has_option("HabiticaAPI", "UserID"), config.has_option("HabiticaAPI", "APIKey")]):
         user.set_headers(config.get("HabiticaAPI", "UserID"), config.get("HabiticaAPI", "APIKey"))
         user.update_profile_stats()
@@ -51,6 +51,16 @@ def main():
             if config.has_option("BasicPomodoros", "PomoSetID"):
                 bpomoset_id = config.get("BasicPomodoros", "PomoSetID")
 
+            # Habits
+            user.create_basic_pomo_habits(bpomo_id, bpomoset_id)
+            for id in config.items("HabitList"):
+                user.habits[id[0]] = habitica.Habit(id[0], user.headers)
+                if config.has_option("HabitDailys", id[0]):
+                    user.habits[id[0]].daily = habitica.Daily(config.get("HabitDailys", id[0]), user.headers)
+                if config.has_option("HabitCodes", id[0]):
+                    user.habits[id[0]].code = config.get("HabitCodes", id[0])
+
+            # Main Window
             root = Tk()
             root.title("Pomodoro Habitica")
             if args:
@@ -59,7 +69,6 @@ def main():
                 tk.Frame(root).pack(side="top", fill="both", expand=True)
                 tk.Label(root, text=code).pack()
             else:
-                user.create_basic_pomo_habits(bpomo_id, bpomoset_id)
                 pomo = pomodoro_window.Pomodoro(root, user)
                 pomo.pack(side="top", fill="both", expand=True)
                 pomo.set_config(sess_mts, sbreak_mts, lbreak_mts, pomoset_amnt)

@@ -8,19 +8,12 @@ class Task:
         self.id = id
         self.headers = headers
         self.type = "Task"
-        self.tags = list()
 
         if retrieve_info:
             self.update()
         else:
             self.text = text
             self.notes = notes
-
-    def get_tag_names(self):
-        tag_names = list()
-        for tag_id in self.tags:
-            tag_names.append(self.tags[tag_id])
-        return tag_names
 
     def retrieve_from_habitica(self):
         r = requests.get('https://habitica.com/api/v3/tasks/' + self.id, headers=self.headers)
@@ -66,13 +59,15 @@ class Task:
             return False
 
     def get_line_text(self):
-        return "{:<31s}\t{}".format(self.text, ", ".join(self.get_tag_names()))
+        return "{}".format(self.text)
 
 
 class Habit(Task):
     def __init__(self, id, headers, retrieve_info=True, text=None, notes=None, counter_up=None, counter_down=None):
         Task.__init__(self, id, headers, retrieve_info, text, notes)
         self.type = "Habit"
+        self.daily = None # Daily Type Object
+        self.code = None # String Type
 
         if not retrieve_info:
             self.counter_up = counter_up
@@ -89,7 +84,7 @@ class Habit(Task):
     def get_line_text(self):
         return "{:<25s}\t{:<6s}\t{}".format(self.text,
                                             str(self.counter_up) + "/" + str(self.counter_down),
-                                            ", ".join(self.get_tag_names()))
+                                            ", ".join(self.daily.text()))
 
 
 class Daily(Task):
@@ -98,17 +93,16 @@ class Daily(Task):
         self.type = "Daily"
 
     def get_line_text(self):
-        return "{:<25s}\t{:<6s}\t{}".format(self.text, "XX/XX", ", ".join(self.get_tag_names()))
+        return "{:<25s}\t{}".format(self.text, "XX/XX")
 
 
 class User:
     def __init__(self, verbose=False):
         self.v = verbose
 
-        self.headers = None
-        self.pomo_tags = dict()
+        self.code = None
         self.habits = dict()
-        self.dailys = dict()
+        self.headers = None
         self.basic_pomo = None
         self.basic_pomoset = None
 
@@ -119,12 +113,6 @@ class User:
         self.exp_next = None
         self.lvl = None
         self.gold = None
-
-        #success = self.update_profile_stats()
-        #self.update_pomo_tags()
-        #self.create_tasks_from_tags()
-
-        # verbose
 
     def set_headers(self, api_user, api_key):
         self.headers = {
@@ -138,38 +126,6 @@ class User:
 
         if bpomoset_id:
             self.basic_pomoset = Habit(bpomoset_id, self.headers, retrieve_info=True)
-
-    def create_tasks_from_tags(self):
-        r = requests.get('https://habitica.com/api/v3/tasks/user', headers=self.headers)
-
-        result = json.loads(r.content)
-        if r.ok:
-            if result["success"]:
-                for task in result["data"]:
-                    if task["tags"]:
-                        new_tag_list = dict()
-                        for tag in task["tags"]:
-                            if tag in self.pomo_tags:
-                                new_tag_list[tag] = self.pomo_tags[tag]
-                        if new_tag_list:
-                            if task["type"] == "habit":
-                                new_task = Habit(task["id"], self.headers, retrieve_info=False,
-                                                 text=task["text"], notes=task["notes"],
-                                                 counter_up=int(task["counterUp"]), counter_down=int(task["counterDown"]))
-                                if new_task:
-                                    new_task.tags = new_tag_list
-                                    self.habits[task["id"]] = new_task
-                            elif task["type"] == "daily":
-                                new_task = Daily(task["id"], self.headers, retrieve_info=False,
-                                                 text=task["text"], notes=task["notes"])
-                                if new_task:
-                                    new_task.tags = new_tag_list
-                                    self.dailys[task["id"]] = new_task
-                return True
-            else:
-                return False
-        else:
-            return False
 
     def update_profile_stats(self):
         r = requests.get('https://habitica.com/api/v3/user', headers=self.headers)
@@ -194,21 +150,6 @@ class User:
                     text += "\tExp: {:.0f} / {}\n".format(self.exp, self.exp_next)
                     text += "\tGold: {:.0f}".format(self.gold)
                     print(text)
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    def update_pomo_tags(self):
-        r = requests.get('https://habitica.com/api/v3/tags', headers=self.headers)
-
-        result = json.loads(r.content)
-        if r.ok:
-            if result["success"]:
-                for tag in result["data"]:
-                    if ":tomato:" in tag["name"]:
-                        self.pomo_tags[tag["id"]] = tag["name"].replace(":tomato:", "")
                 return True
             else:
                 return False
