@@ -58,16 +58,12 @@ class Task:
         else:
             return False
 
-    def get_line_text(self):
-        return "{}".format(self.text)
-
-
 class Habit(Task):
     def __init__(self, id, headers, retrieve_info=True, text=None, notes=None, counter_up=None, counter_down=None):
         Task.__init__(self, id, headers, retrieve_info, text, notes)
         self.type = "Habit"
-        self.daily = None # Daily Type Object
-        self.code = None # String Type
+        self.daily = None   # Daily ID String
+        self.code = None    # String
 
         if not retrieve_info:
             self.counter_up = counter_up
@@ -81,20 +77,11 @@ class Habit(Task):
             self.counter_up = int(info["counterUp"])
             self.counter_down = int(info["counterDown"])
 
-    def get_line_text(self):
-        return "{:<25s}\t{:<6s}\t{}".format(self.text,
-                                            str(self.counter_up) + "/" + str(self.counter_down),
-                                            ", ".join(self.daily.text()))
-
-
 class Daily(Task):
     def __init__(self, id, headers, retrieve_info=True, text=None, notes=None):
         Task.__init__(self, id, headers, retrieve_info, text, notes)
         self.type = "Daily"
-
-    def get_line_text(self):
-        return "{:<25s}\t{}".format(self.text, "XX/XX")
-
+        self.habits = list()
 
 class User:
     def __init__(self, verbose=False):
@@ -102,6 +89,7 @@ class User:
 
         self.code = None
         self.habits = dict()
+        self.dailys = dict()
         self.headers = None
         self.basic_pomo = None
         self.basic_pomoset = None
@@ -126,6 +114,14 @@ class User:
 
         if bpomoset_id:
             self.basic_pomoset = Habit(bpomoset_id, self.headers, retrieve_info=True)
+
+    def generate_dailys(self):
+        for habit_id in self.habits:
+            daily_id = self.habits[habit_id].daily
+            if daily_id:
+                if daily_id not in self.dailys:
+                    self.dailys[daily_id] = Daily(daily_id, self.headers)
+                self.dailys[daily_id].habits.append(habit_id)
 
     def update_profile_stats(self):
         r = requests.get('https://habitica.com/api/v3/user', headers=self.headers)
@@ -212,34 +208,35 @@ class User:
                     self.habits[id].update()
                     if self.v: print("{} was updated: {}".format(self.habits[id].text, self.habits[id].get_line_text()))
 
-                # # Updating dailies
-                # if daily_id:
-                #     if daily_task_list:
-                #         total_count = 0
-                #         tasks_array = ""
-                #         for task in daily_task_list:
-                #             daily_name = daily_task_list[task]["daily"]
-                #             count_r = get_task(daily_task_list[task]["id"])
-                #             total_count += count_r["counterUp"]
-                #             tasks_array += "\n\tTotal: {:02d} | {}".format(count_r["counterUp"], count_r["text"])
-                #         if get_task(daily_id)["completed"]:
-                #             print("'{}' is already completed".format(daily_name))
-                #         else:
-                #             print("Daily associated: {}".format(daily_name), end="")
-                #             print(tasks_array)
-                #             print("\t===============\n\tTotal: {:02d} / {:02d}".format(total_count, pomo_set_interval))
-                #             if total_count >= pomo_set_interval:
-                #                 d_r = score_task(daily_id, True)
-                #                 if d_r:
-                #                     print("Daily task '{}' was completed!".format(daily_name))
-                #                 else:
-                #                     print("Habitica API Error when scoring the daily")
-                #
-                #     else:
-                #         print("Error: A list of tasks sharing the same daily was not send")
 
-        if self.v: print("Habit/Dailys drops: {}".format(drops))
-        return drops
+
+        #         if daily_id:
+        #             if daily_task_list:
+        #                 total_count = 0
+        #                 tasks_array = ""
+        #                 for task in daily_task_list:
+        #                     daily_name = daily_task_list[task]["daily"]
+        #                     count_r = get_task(daily_task_list[task]["id"])
+        #                     total_count += count_r["counterUp"]
+        #                     tasks_array += "\n\tTotal: {:02d} | {}".format(count_r["counterUp"], count_r["text"])
+        #                 if get_task(daily_id)["completed"]:
+        #                     print("'{}' is already completed".format(daily_name))
+        #                 else:
+        #                     print("Daily associated: {}".format(daily_name), end="")
+        #                     print(tasks_array)
+        #                     print("\t===============\n\tTotal: {:02d} / {:02d}".format(total_count, pomo_set_interval))
+        #                     if total_count >= pomo_set_interval:
+        #                         d_r = score_task(daily_id, True)
+        #                         if d_r:
+        #                             print("Daily task '{}' was completed!".format(daily_name))
+        #                         else:
+        #                             print("Habitica API Error when scoring the daily")
+        #
+        #             else:
+        #                 print("Error: A list of tasks sharing the same daily was not send")
+        #
+        # if self.v: print("Habit/Dailys drops: {}".format(drops))
+        # return drops
 
     # For tests
     def get_all_text(self):
@@ -268,109 +265,6 @@ class User:
             text += "\tNo habits\n"
 
         return text
-
-
-def main():
-    # State: 0 exit | 1 menu | 2 post-menu | 3 pomodoro | 4 break
-    state = 0
-    current_task = None
-    task_list = dict()
-    pomo_id_exists = config.has_option("HabiticaPomodoro", "PomodoroID")
-    pomo_set_id_exists = config.has_option("HabiticaPomodoro", "PomodoroSetID")
-
-    for t in config.items("HabiticaHabits"):
-        task_key = t[0]
-        task_info = t[1].split(",")
-        task_list[task_key] = {"id": task_info[0], "daily": task_info[1] if len(task_info) > 1 else None}
-
-    if len(sys.argv) < 2:
-        state = 1
-    else:
-        current_task = sys.argv[1]
-        state = 2
-
-    while state:
-        # Menu
-        if state == 1:
-            print("Main menu: <code> The task code <list> List of task codes <exit> Exit the menu")
-            current_task = input("Input the task code: ")
-            state = 2
-        # Evaluating Menu input
-        elif state == 2:
-            if current_task == "list":
-                print("pomo : -- | Basic Pomodoro Timer")
-                for task_key in task_list:
-                    r = get_task(task_list[task_key]["id"])
-                    print(task_key + " : ", end="")
-                    print_task_name(r, counts=True, daily_task=task_list[task_key]["daily"])
-                print()
-                state = 1
-            elif current_task == "exit":
-                state = 0
-            elif current_task == "pomo":
-                current_task = None
-                state = 3
-            else:
-                if current_task not in task_list:
-                    print("invalid task code")
-                    current_task = None
-                    state = 1
-                else:
-                    state = 3
-        # Pomodoro State
-        elif state == 3:
-            if current_task:
-                r = get_task(task_list[current_task]["id"])
-                print_task_name(r, counts=True, notes=True)
-            else:
-                if pomo_id_exists:
-                    r = get_task(config.get("HabiticaPomodoro", "PomodoroID"))
-                    print_task_name(r, counts=True, notes=True)
-                else:
-                    print("Basic Pomodoro Timer")
-            is_interrupted = pomodoro.timeout_input(int(config.get("Pomodoro", "TaskMinutes")), "Press Intro for stop")
-            if is_interrupted:
-                print("\x1b[2K\rTask was interrupted before time")
-                state = 4
-            else:
-                if current_task:
-                    # Updating basic pomodoro
-                    if pomo_set_id_exists:
-                        r = update_pomodoros(config.get("HabiticaPomodoro", "PomodoroID"),
-                                             config.get("HabiticaPomodoro", "PomodoroSetID"),
-                                             int(config.get("Pomodoro", "TotalSet")))
-                    else:
-                        r = update_pomodoros(config.get("HabiticaPomodoro", "PomodoroID"))
-
-                    # Scoring the task
-                    target_task_daily_name = task_list[current_task]["daily"]
-                    target_daily_task_list = {}
-                    for task in task_list:
-                        if task_list[task]["daily"] == target_task_daily_name:
-                            target_daily_task_list[task] = task_list[task]
-
-                    if target_task_daily_name:
-                        if target_task_daily_name in dict(config.items("HabiticaDailies")):
-                            rr = update_habit_and_daily(task_list[current_task]["id"],
-                                                        config.get("HabiticaDailies", target_task_daily_name),
-                                                        target_daily_task_list,
-                                                        int(config.get("Pomodoro", "TotalSet")))
-                        else:
-                            print("Error: The associated task's daily {} does not exist".format(target_task_daily_name))
-                            rr = update_habit_and_daily(task_list[current_task]["id"])
-                    else:
-                        rr = update_habit_and_daily(task_list[current_task]["id"])
-
-                    if r and rr:
-                        play_notification()
-                else:
-                    print("Completed Pomodoro!")
-                    play_notification()
-            state = 1
-        elif state == 4:
-            print("break")
-        else:
-            print("Warning: Bad state")
 
 
 def get_all_tasks(headers):

@@ -63,11 +63,11 @@ class Pomodoro(tk.Frame):
         for id in self.user.habits:
             self.habit_radio_list.append(tk.Radiobutton(self, text=self.user.habits[id].text, variable=self.radio_var, value=id))
             self.habit_counter_label_list.append(tk.Label(self, text="{}/{}".format(self.user.habits[id].counter_up, self.user.habits[id].counter_down)))
-            self.habit_dailys_label_list.append(tk.Label(self, text=""))
             if self.user.habits[id].daily:
-                self.habit_dailys_label_list.append(tk.Label(self, text=self.user.habits[id].daily.text))
+                self.habit_dailys_label_list.append(tk.Label(self, text=self.user.dailys[self.user.habits[id].daily].text))
             else:
                 self.habit_dailys_label_list.append(tk.Label(self, text=""))
+
         # Hidden
         self.current_task_info_label = tk.Label(self, text="")
         self.current_task_counter_label = tk.Label(self, text="")

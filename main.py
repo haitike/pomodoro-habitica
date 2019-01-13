@@ -56,9 +56,10 @@ def main():
             for id in config.items("HabitList"):
                 user.habits[id[0]] = habitica.Habit(id[0], user.headers)
                 if config.has_option("HabitDailys", id[0]):
-                    user.habits[id[0]].daily = habitica.Daily(config.get("HabitDailys", id[0]), user.headers)
+                    user.habits[id[0]].daily = config.get("HabitDailys", id[0])
                 if config.has_option("HabitCodes", id[0]):
                     user.habits[id[0]].code = config.get("HabitCodes", id[0])
+            user.generate_dailys()
 
             # Main Window
             root = Tk()
