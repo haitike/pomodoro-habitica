@@ -78,10 +78,20 @@ class Habit(Task):
             self.counter_down = int(info["counterDown"])
 
 class Daily(Task):
-    def __init__(self, id, headers, retrieve_info=True, text=None, notes=None):
+    def __init__(self, id, headers, retrieve_info=True, text=None, notes=None, completed=None):
         Task.__init__(self, id, headers, retrieve_info, text, notes)
         self.type = "Daily"
         self.habits = list()
+
+        if not retrieve_info:
+            self.completed = completed
+
+    def update(self):
+        info = self.retrieve_from_habitica()
+        if info:
+            self.text = info["text"]
+            self.notes = info["notes"]
+            self.completed = info["completed"]
 
 class User:
     def __init__(self, verbose=False):
@@ -164,6 +174,13 @@ class User:
         if self.basic_pomoset:
             self.basic_pomoset.update()
 
+    def daily_count(self, daily_id):
+        x = 0
+        for h in self.dailys[daily_id].habits:
+            x += self.habits[h].counter_up
+
+        return x
+
     def score_basic_pomo(self, set_interval, update_tasks=False):
         drops = list()
         if self.basic_pomo:
@@ -176,7 +193,7 @@ class User:
                     drops.append(p_score_result[4])
                 if update_tasks:
                     self.basic_pomo.update()
-                    if self.v: print("Basic pomo was updated: {}".format(self.basic_pomo.get_line_text()))
+                    if self.v: print("Basic pomo was updated!")
 
                 # Updating Pomodoro Set
                 if self.basic_pomoset and set_interval:
@@ -190,7 +207,7 @@ class User:
                                 drops.append(p_score_result[4])
                             if update_tasks:
                                 self.basic_pomoset.update()
-                                if self.v: print("Pomo Set was updated: {}".format(self.basic_pomoset.get_line_text()))
+                                if self.v: print("Pomo Set was updated!")
         if self.v: print("Basic/Set pomo drops: {}".format(drops))
         return drops
 
@@ -206,65 +223,30 @@ class User:
                     drops.append(t_score_result[4])
                 if update_tasks:
                     self.habits[id].update()
-                    if self.v: print("{} was updated: {}".format(self.habits[id].text, self.habits[id].get_line_text()))
+                    if self.v: print("{} was updated!".format(self.habits[id].text))
 
-
-
-        #         if daily_id:
-        #             if daily_task_list:
-        #                 total_count = 0
-        #                 tasks_array = ""
-        #                 for task in daily_task_list:
-        #                     daily_name = daily_task_list[task]["daily"]
-        #                     count_r = get_task(daily_task_list[task]["id"])
-        #                     total_count += count_r["counterUp"]
-        #                     tasks_array += "\n\tTotal: {:02d} | {}".format(count_r["counterUp"], count_r["text"])
-        #                 if get_task(daily_id)["completed"]:
-        #                     print("'{}' is already completed".format(daily_name))
-        #                 else:
-        #                     print("Daily associated: {}".format(daily_name), end="")
-        #                     print(tasks_array)
-        #                     print("\t===============\n\tTotal: {:02d} / {:02d}".format(total_count, pomo_set_interval))
-        #                     if total_count >= pomo_set_interval:
-        #                         d_r = score_task(daily_id, True)
-        #                         if d_r:
-        #                             print("Daily task '{}' was completed!".format(daily_name))
-        #                         else:
-        #                             print("Habitica API Error when scoring the daily")
-        #
-        #             else:
-        #                 print("Error: A list of tasks sharing the same daily was not send")
-        #
-        # if self.v: print("Habit/Dailys drops: {}".format(drops))
-        # return drops
-
-    # For tests
-    def get_all_text(self):
-        text = "{} (lv{:.0f})\n".format(self.username, self.lvl)
-        text += "\tHP: {:.0f} / {}\n".format(self.hp, self.max_hp)
-        text += "\tExp: {:.0f} / {}\n".format(self.exp, self.exp_next)
-        text += "\tGold: {:.0f}".format(self.gold)
-
-        if self.basic_pomo:
-            text += "\nBasic Pomodoros:\n"
-            text += "\t{}\n".format(self.basic_pomo.get_line_text())
-            text += "\t{}".format(self.basic_pomoset.get_line_text())
-
-        text += "\nHabits:\n"
-        if self.habits:
-            for id in self.habits:
-                text+= "\t{}\n".format(self.habits[id].get_line_text())
-        else:
-            text += "\tNo habits\n"
-
-        text += "Dailys:\n"
-        if self.dailys:
-            for id in self.dailys:
-                text += "\t{}\n".format(self.dailys[id].get_line_text())
-        else:
-            text += "\tNo habits\n"
-
-        return text
+                # Scoring dailys
+                daily_id = self.habits[id].daily
+                if daily_id and set_interval:
+                    if self.dailys[daily_id].completed:
+                        if self.v: print("{} was already completed. No action needed.".format(self.dailys[daily_id].text))
+                    else:
+                        daily_count = self.daily_count(daily_id)
+                        if daily_count >= set_interval:
+                            d_score_result = self.dailys[daily_id].score()
+                            if self.v: print(
+                                "{} scored [{}/{}]: {}".format(self.dailys[daily_id].text, self.daily_count(daily_id),
+                                                               set_interval, d_score_result))
+                            if d_score_result:
+                                self.hp, self.exp, self.lvl, self.gold = d_score_result[0], d_score_result[1], \
+                                                                         d_score_result[2], d_score_result[3]
+                                if d_score_result[4]:
+                                    drops.append(d_score_result[4])
+                                if update_tasks:
+                                    self.dailys[daily_id].update()
+                                    if self.v: print("{} was updated!".format(self.dailys[daily_id].text))
+        if self.v: print("Habit/Dailys drops: {}".format(drops))
+        return drops
 
 
 def get_all_tasks(headers):
