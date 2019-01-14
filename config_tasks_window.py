@@ -3,13 +3,15 @@ import configparser
 from functools import partial
 from tkinter.font import nametofont
 
-from habitica import get_all_tasks
+from habitica import get_user_tasks, get_tasks_order, Habit, Daily
 
 class ConfigTasks(tk.Frame):
     def __init__(self, parent, headers, *args, **kwargs):
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
-        habits, dailys = get_all_tasks(headers)
+
+        habits, dailys = get_user_tasks(headers)
+        tasks_order = get_tasks_order(headers)
 
         # Config
         self.config = configparser.ConfigParser()
@@ -24,7 +26,7 @@ class ConfigTasks(tk.Frame):
         # The list of Dailys that will be choosen in the optionmenu.
         self.daily_dropmenu_choices = {None: "---"}
         self.task_rows = dict()
-        for d_id in dailys:
+        for d_id in tasks_order["dailys"]:
             self.daily_dropmenu_choices[d_id] = dailys[d_id].text
 
         # Top level background and Save all button.
@@ -54,7 +56,7 @@ class ConfigTasks(tk.Frame):
         canvas.create_window((0, 0), window=interior_frame, anchor='nw')
 
         # Creating Widgets in the Scrollable frame
-        for index, h_id in enumerate(habits):
+        for index, h_id in enumerate(tasks_order["habits"]):
             self.task_rows[h_id] = dict()
 
             # Variables
@@ -75,6 +77,8 @@ class ConfigTasks(tk.Frame):
 
             # Widgets
             name = tk.Label(interior_frame, text=habits[h_id].text)
+            if not habits[h_id].up:
+                name.config(fg="red", text="{} (no Up task)".format(name.cget("text")))
             name.grid(row=index+1, column=1, sticky="news")
             is_pomo = tk.Checkbutton(interior_frame, text="Pomodoro", command=partial(self.is_pomo_check, h_id),
                                      variable=self.task_rows[h_id]["is_pomo_var"])

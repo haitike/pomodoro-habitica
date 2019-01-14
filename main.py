@@ -16,7 +16,7 @@ def main():
     user = habitica.User(verbose=True)
     if all([config.has_section("HabiticaAPI"), config.has_option("HabiticaAPI", "UserID"), config.has_option("HabiticaAPI", "APIKey")]):
         user.set_headers(config.get("HabiticaAPI", "UserID"), config.get("HabiticaAPI", "APIKey"))
-        user.update_profile_stats()
+        user.update_profile()
 
     if not user.username:
         root = Tk()
@@ -74,6 +74,7 @@ def main():
                 pomo.pack(side="top", fill="both", expand=True)
                 pomo.set_config(sess_mts, sbreak_mts, lbreak_mts, pomoset_amnt)
             root.mainloop()
+
 
 if __name__ == "__main__":
     main()

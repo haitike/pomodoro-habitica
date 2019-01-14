@@ -59,7 +59,7 @@ class Task:
             return False
 
 class Habit(Task):
-    def __init__(self, id, headers, retrieve_info=True, text=None, notes=None, counter_up=None, counter_down=None):
+    def __init__(self, id, headers, retrieve_info=True, text=None, notes=None, counter_up=None, counter_down=None, up=None, down=None):
         Task.__init__(self, id, headers, retrieve_info, text, notes)
         self.type = "Habit"
         self.daily = None   # Daily ID String
@@ -68,6 +68,8 @@ class Habit(Task):
         if not retrieve_info:
             self.counter_up = counter_up
             self.counter_down = counter_down
+            self.up = up
+            self.down = down
 
     def update(self):
         info = self.retrieve_from_habitica()
@@ -76,6 +78,8 @@ class Habit(Task):
             self.notes = info["notes"]
             self.counter_up = int(info["counterUp"])
             self.counter_down = int(info["counterDown"])
+            self.up = info["up"]
+            self.down = info["down"]
 
 class Daily(Task):
     def __init__(self, id, headers, retrieve_info=True, text=None, notes=None, completed=None):
@@ -133,7 +137,7 @@ class User:
                     self.dailys[daily_id] = Daily(daily_id, self.headers)
                 self.dailys[daily_id].habits.append(habit_id)
 
-    def update_profile_stats(self):
+    def update_profile(self):
         r = requests.get('https://habitica.com/api/v3/user', headers=self.headers)
 
         result = json.loads(r.content)
@@ -156,6 +160,7 @@ class User:
                     text += "\tExp: {:.0f} / {}\n".format(self.exp, self.exp_next)
                     text += "\tGold: {:.0f}".format(self.gold)
                     print(text)
+
                 return True
             else:
                 return False
@@ -248,8 +253,20 @@ class User:
         if self.v: print("Habit/Dailys drops: {}".format(drops))
         return drops
 
+def get_tasks_order(headers):
+    r = requests.get('https://habitica.com/api/v3/user?userFields=tasksOrder', headers=headers)
 
-def get_all_tasks(headers):
+    result = json.loads(r.content)
+    if r.ok:
+        if result["success"]:
+            return result["data"]["tasksOrder"]
+        else:
+            return False
+    else:
+        return False
+
+
+def get_user_tasks(headers):
     r = requests.get('https://habitica.com/api/v3/tasks/user', headers=headers)
 
     result = json.loads(r.content)
@@ -261,6 +278,7 @@ def get_all_tasks(headers):
                 if task["type"] == "habit":
                     new_task = Habit(task["id"], headers, retrieve_info=False,
                                      text=task["text"], notes=task["notes"],
+                                     up=task["up"], down=task["down"],
                                      counter_up=int(task["counterUp"]),
                                      counter_down=int(task["counterDown"]))
                     if new_task:

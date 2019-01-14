@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import config_tasks_window
-from config_tasks_window import get_all_tasks
+from config_tasks_window import get_user_tasks
 
 
 class Pomodoro(tk.Frame):

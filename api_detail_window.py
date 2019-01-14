@@ -20,7 +20,7 @@ class APIDetails(tk.Frame):
 
     def on_button(self):
         self.user.set_headers(self.user_entry.get(), self.key_entry.get())
-        success = self.user.update_profile_stats()
+        success = self.user.update_profile()
         if success:
             config = configparser.ConfigParser()
             config.read("config.ini")
