@@ -1,8 +1,12 @@
 import tkinter as tk
 from tkinter import messagebox
 import config_tasks_window
-from config_tasks_window import get_user_tasks
 
+from importlib import util
+notify2_spec = util.find_spec("notify2")
+if notify2_spec:
+    import notify2
+    notify2.init("Test")
 
 class Pomodoro(tk.Frame):
     def __init__(self, parent, user, *args, **kwargs):
@@ -13,7 +17,7 @@ class Pomodoro(tk.Frame):
         self.user = user
 
         # Habitica config
-        self.seconds_in_minute = 1  # Change it for fast tests.
+        self.seconds_in_minute = 60  # Change it for fast tests.
         self.session_scs = 25 * self.seconds_in_minute
         self.short_rest_scs = 5 * self.seconds_in_minute
         self.long_rest_scs = 25 * self.seconds_in_minute
@@ -127,6 +131,8 @@ class Pomodoro(tk.Frame):
             # prompt and start new session
             if self.is_break and self.session_counter % 4 != 0:
                 success_text = self.score_to_habitica()
+                if notify2_spec:
+                    notify2.Notification("completed", "Pomodoro was completed!").show()
                 prompt_answer = messagebox.askquestion("Session Ended!", success_text + "Are you ready for a break?", icon='question')
             elif self.is_break and self.session_counter % 4 == 0:
                 prompt_answer = messagebox.askquestion("4 POMODORI!", "Do you think you deserve a very long break", icon='question')

@@ -64,15 +64,12 @@ def main():
             # Main Window
             root = Tk()
             root.title("Pomodoro Habitica")
+            pomo = pomodoro_window.Pomodoro(root, user)
+            pomo.pack(side="top", fill="both", expand=True)
             if args:
-                # TODO: This is temporal. Pass argv in future.
-                code = args[0]
-                tk.Frame(root).pack(side="top", fill="both", expand=True)
-                tk.Label(root, text=code).pack()
-            else:
-                pomo = pomodoro_window.Pomodoro(root, user)
-                pomo.pack(side="top", fill="both", expand=True)
-                pomo.set_config(sess_mts, sbreak_mts, lbreak_mts, pomoset_amnt)
+                if args[0] == "fast": # For debugging
+                    pomo.seconds_in_minute = 1
+            pomo.set_config(sess_mts, sbreak_mts, lbreak_mts, pomoset_amnt)
             root.mainloop()
 
 

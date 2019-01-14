@@ -3,7 +3,7 @@ import configparser
 from functools import partial
 from tkinter.font import nametofont
 
-from habitica import get_user_tasks, get_tasks_order, Habit, Daily
+from habitica import get_user_tasks, get_tasks_order
 
 class ConfigTasks(tk.Frame):
     def __init__(self, parent, headers, *args, **kwargs):
