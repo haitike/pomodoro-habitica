@@ -116,11 +116,14 @@ class Pomodoro(tk.Frame):
         self.current_task_code_label.grid_remove()
         self.current_task_notes_label.grid_remove()
 
+        # Update
+        self.update_habit_labels()
+
     def set_config(self, sess_mts, srest_mts, lgrest_mts, set_amnt):
         self.session_scs = sess_mts * self.seconds_in_minute
         self.short_rest_scs = srest_mts * self.seconds_in_minute
         self.long_rest_scs = lgrest_mts * self.seconds_in_minute
-        self.pomo_set_amount = set_amnt * self.seconds_in_minute
+        self.pomo_set_amount = set_amnt
 
     def count(self, timer):
         if timer <= -1:
@@ -196,6 +199,9 @@ class Pomodoro(tk.Frame):
                     self.habit_daily_label_list[index].config(fg="black")
                     self.habit_daily_counter_label_list[index].config(fg="black")
 
+        # Labels when pomodoro is active
+        self.update_current_task_labels()
+
     def score_to_habitica(self):
         exp, gold, lvl = self.user.exp, self.user.gold, self.user.lvl
         success_text = ""
@@ -260,6 +266,15 @@ class Pomodoro(tk.Frame):
             self.habit_daily_label_list[index].grid_remove()
             self.habit_daily_counter_label_list[index].grid_remove()
         # self.start_btn.configure(command=tk.DISABLED)
+
+        self.update_current_task_labels()
+
+        self.current_task_info_label.grid()
+        self.current_task_counter_label.grid()
+        self.current_task_code_label.grid()
+        self.current_task_notes_label.grid()
+
+    def update_current_task_labels(self):
         if self.radio_var.get() == "bpomo_noid":
             self.current_task_info_label.configure(text="Basic Pomodoro")
         elif self.radio_var.get() == "bpomo_id":
@@ -268,12 +283,10 @@ class Pomodoro(tk.Frame):
                                                                           self.user.basic_pomoset.counter_down))
         else:
             self.current_task_info_label.configure(text=self.user.habits[self.radio_var.get()].text)
-            self.current_task_counter_label.configure(text="{}/{}".format(self.user.habits[self.radio_var.get()].counter_up,
-                                                                          self.user.habits[self.radio_var.get()].counter_down))
+            self.current_task_counter_label.configure(
+                text="{}/{}".format(self.user.habits[self.radio_var.get()].counter_up,
+                                    self.user.habits[self.radio_var.get()].counter_down))
             if self.user.habits[self.radio_var.get()].code:
-               self.current_task_code_label.configure(text="Console code: {}".format(self.user.habits[self.radio_var.get()].code))
+                self.current_task_code_label.configure(
+                    text="Console code: {}".format(self.user.habits[self.radio_var.get()].code))
             self.current_task_notes_label.configure(text=self.user.habits[self.radio_var.get()].notes)
-        self.current_task_info_label.grid()
-        self.current_task_counter_label.grid()
-        self.current_task_code_label.grid()
-        self.current_task_notes_label.grid()

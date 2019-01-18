@@ -1,5 +1,9 @@
 import tkinter as tk
 import configparser
+import os
+
+script_dir = os.path.dirname(__file__)
+config_file = os.path.join(script_dir, "config.ini")
 
 class APIDetails(tk.Frame):
     def __init__(self, parent, user=None, *args, **kwargs):
@@ -23,12 +27,12 @@ class APIDetails(tk.Frame):
         success = self.user.update_profile()
         if success:
             config = configparser.ConfigParser()
-            config.read("config.ini")
+            config.read(config_file)
             if not config.has_section("HabiticaAPI"):
                 config.add_section("HabiticaAPI")
             config.set("HabiticaAPI", "UserID", self.user_entry.get())
             config.set("HabiticaAPI", "APIKey", self.key_entry.get())
-            with open('config.ini', 'w') as configfile:
+            with open(config_file, 'w') as configfile:
                 config.write(configfile)
             self.on_closing()
         else:

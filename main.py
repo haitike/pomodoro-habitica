@@ -7,8 +7,12 @@ import config_tasks_window
 import api_detail_window
 import habitica
 import configparser
+import os
+
+script_dir = os.path.dirname(__file__)
+config_file = os.path.join(script_dir, "config.ini")
 config = configparser.ConfigParser()
-config.read("config.ini")
+config.read(config_file)
 
 def main():
     args = sys.argv[1:]
@@ -32,7 +36,7 @@ def main():
             cwindow.pack(side="top", fill="both", expand=True)
             root.mainloop()
             # Updating config after writting a lot of stuff in the window
-            config.read("config.ini")
+            config.read(config_file)
 
         if all([config.has_section("HabitList"), config.has_section("HabitDailys"), config.has_section("HabitCodes")]):
             sess_mts = 25
