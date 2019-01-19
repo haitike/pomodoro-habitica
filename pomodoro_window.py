@@ -1,12 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
+from notification import notification
 import config_tasks_window
-
-from importlib import util
-notify2_spec = util.find_spec("notify2")
-if notify2_spec:
-    import notify2
-    notify2.init("Test")
 
 class Pomodoro(tk.Frame):
     def __init__(self, parent, user, *args, **kwargs):
@@ -133,13 +128,15 @@ class Pomodoro(tk.Frame):
 
             # prompt and start new session
             if self.is_break and self.session_counter % 4 != 0:
-                success_text = self.score_to_habitica()
-                if notify2_spec:
-                    notify2.Notification("completed", "Pomodoro was completed!").show()
+                success_text, scored_task = self.score_to_habitica()
+                notification(0, task=scored_task)
                 prompt_answer = messagebox.askquestion("Session Ended!", success_text + "Are you ready for a break?", icon='question')
             elif self.is_break and self.session_counter % 4 == 0:
-                prompt_answer = messagebox.askquestion("4 POMODORI!", "Do you think you deserve a very long break", icon='question')
+                success_text, scored_task = self.score_to_habitica()
+                notification(0, task=scored_task)
+                prompt_answer = messagebox.askquestion("4 POMODORI!", success_text + "\nDo you think you deserve a very long break?", icon='question')
             else:
+                notification(1)
                 prompt_answer = messagebox.askquestion("Time's up!", "Ready for a new session?", icon='question')
 
             # prompts and restart cycle
@@ -205,14 +202,16 @@ class Pomodoro(tk.Frame):
     def score_to_habitica(self):
         exp, gold, lvl = self.user.exp, self.user.gold, self.user.lvl
         success_text = ""
+        scored_task = ""
 
         if self.radio_var.get() != "bpomo_noid":
             if self.radio_var.get() == "bpomo_id":
                 drops = self.user.score_basic_pomo(set_interval=self.pomo_set_amount, update_tasks=True)
+                scored_task = self.user.basic_pomo.text
             else:
                 drops = self.user.score_basic_pomo(set_interval=self.pomo_set_amount, update_tasks=True)
                 drops += self.user.score_habit(self.radio_var.get(), set_interval=self.pomo_set_amount, update_tasks=True)
-
+                scored_task = self.user.habits[self.radio_var.get()].text
             if self.user.lvl > lvl:
                 success_text += "Level up! You are now level {}!!".format(self.user.lvl)
             else:
@@ -222,7 +221,10 @@ class Pomodoro(tk.Frame):
                 success_text += "Drops: {}\n".format(drops)
             self.update_stats_labels()
             self.update_habit_labels()
-        return success_text
+        else:
+            scored_task = "Basic Pomodoro"
+
+        return success_text, scored_task
 
     # stops the countdown and resets the counter
     def stop_count(self):
@@ -279,8 +281,8 @@ class Pomodoro(tk.Frame):
             self.current_task_info_label.configure(text="Basic Pomodoro")
         elif self.radio_var.get() == "bpomo_id":
             self.current_task_info_label.configure(text=self.user.basic_pomo.text)
-            self.current_task_counter_label.configure(text="{}/{}".format(self.user.basic_pomoset.counter_up,
-                                                                          self.user.basic_pomoset.counter_down))
+            self.current_task_counter_label.configure(text="{}/{}".format(self.user.basic_pomo.counter_up,
+                                                                          self.user.basic_pomo.counter_down))
         else:
             self.current_task_info_label.configure(text=self.user.habits[self.radio_var.get()].text)
             self.current_task_counter_label.configure(
