@@ -35,7 +35,7 @@ class Pomodoro(tk.Frame):
         self.user_gold_label = tk.Label(self, text="")
         self.update_stats_labels()
         self.time_label = tk.Label(self, text='00:00')
-        self.status_label = tk.Label(self, text='Stopped')
+        self.status_label = tk.Label(self, text='Stopped', fg="red")
         self.streak_label = tk.Label(self, text='Streak: 0')
         config_tasks_btn = tk.Button(self, text="Config Tasks", command=self.new_config_task_window)
 
@@ -143,12 +143,15 @@ class Pomodoro(tk.Frame):
             if prompt_answer == 'yes' and self.session_counter % 4 != 0 and self.is_break:
                 self.after_cancel(self.job)
                 self.count(self.short_rest_scs)
+                self.status_label.config(text="Break", fg="orange")
             elif prompt_answer == 'yes' and self.session_counter % 4 == 0 and self.is_break:
                 self.after_cancel(self.job)
                 self.count(self.long_rest_scs)
+                self.status_label.config(text="Long Break", fg="orange")
             elif prompt_answer == 'no':
                 self.stop_count()
             else:
+                self.status_label.config(text="Pomodoro", fg="green")
                 self.session_counter += 1
                 self.count(self.session_scs)
             return
@@ -228,6 +231,7 @@ class Pomodoro(tk.Frame):
 
     # stops the countdown and resets the counter
     def stop_count(self):
+        self.status_label.config(text="Stopped", fg="red")
         self.after_cancel(self.job)
         self.time_label.configure(text='{:02d}:{:02d}'.format(0, 0))
         self.session_counter = 0
@@ -255,6 +259,7 @@ class Pomodoro(tk.Frame):
 
     # starts counting loop
     def start(self):
+        self.status_label.config(text="Pomodoro", fg="green")
         self.session_counter += 1
         self.start_btn.grid_remove()
         self.count(self.session_scs)
