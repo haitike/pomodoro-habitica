@@ -49,33 +49,47 @@ class Pomodoro(tk.Frame):
         self.bpomo_counter_label = tk.Label(self, text="")
         self.bpomoset_label = tk.Label(self, text="")
         self.bpomoset_counter_label = tk.Label(self, text="")
-        if self.user.basic_pomo:
-            self.bpomo_radio.configure(text=self.user.basic_pomo.text, value="bpomo_id")
-            self.bpomo_counter_label.configure(text="{}/{}".format(self.user.basic_pomo.counter_up, self.user.basic_pomo.counter_down))
-            self.radio_var.set("bpomo_id")
-            if self.user.basic_pomoset:
-                self.bpomoset_label.configure(text="\t{}".format(self.user.basic_pomoset.text))
-                self.bpomoset_counter_label.configure(text="{}/{}".format(self.user.basic_pomoset.counter_up, self.user.basic_pomoset.counter_down))
+        if self.user:
+            if self.user.basic_pomo:
+                self.bpomo_radio.configure(text=self.user.basic_pomo.text, value="bpomo_id")
+                self.bpomo_counter_label.configure(text="{}/{}".format(self.user.basic_pomo.counter_up, self.user.basic_pomo.counter_down))
+                self.radio_var.set("bpomo_id")
+                if self.user.basic_pomoset:
+                    self.bpomoset_label.configure(text="\t{}".format(self.user.basic_pomoset.text))
+                    self.bpomoset_counter_label.configure(text="{}/{}".format(self.user.basic_pomoset.counter_up, self.user.basic_pomoset.counter_down))
         self.habit_radio_list = list()
         self.habit_counter_label_list = list()
         self.habit_daily_label_list = list()
         self.habit_daily_counter_label_list = list()
-        for id in self.user.habits:
-            self.habit_radio_list.append(tk.Radiobutton(self, text=self.user.habits[id].text, variable=self.radio_var, value=id))
-            self.habit_counter_label_list.append(tk.Label(self, text="{}/{}".format(self.user.habits[id].counter_up, self.user.habits[id].counter_down)))
-            daily_id = self.user.habits[id].daily
-            if daily_id:
-                self.habit_daily_label_list.append(tk.Label(self, text=self.user.dailys[daily_id].text))
-                self.habit_daily_counter_label_list.append(tk.Label(self, text="{}/{}".format(self.user.daily_count(daily_id), self.pomo_set_amount)))
-            else:
-                self.habit_daily_label_list.append(tk.Label(self, text=""))
-                self.habit_daily_counter_label_list.append(tk.Label(self, text=""))
+        if self.user:
+            for id in self.user.habits:
+                self.habit_radio_list.append(tk.Radiobutton(self, text=self.user.habits[id].text, variable=self.radio_var, value=id))
+                self.habit_counter_label_list.append(tk.Label(self, text="{}/{}".format(self.user.habits[id].counter_up, self.user.habits[id].counter_down)))
+                daily_id = self.user.habits[id].daily
+                if daily_id:
+                    self.habit_daily_label_list.append(tk.Label(self, text=self.user.dailys[daily_id].text))
+                    self.habit_daily_counter_label_list.append(tk.Label(self, text="{}/{}".format(self.user.daily_count(daily_id), self.pomo_set_amount)))
+                else:
+                    self.habit_daily_label_list.append(tk.Label(self, text=""))
+                    self.habit_daily_counter_label_list.append(tk.Label(self, text=""))
 
         # Hidden
         self.current_task_info_label = tk.Label(self, text="")
         self.current_task_counter_label = tk.Label(self, text="")
         self.current_task_code_label = tk.Label(self, text="")
         self.current_task_notes_label = tk.Label(self, text="")
+        # The Switch Task Option Menu
+        if self.user:
+            self.list_var = tk.StringVar()
+            self.switch_task_label = tk.Label(self, text="Do you want to switch task after this break?")
+            if self.user.basic_pomo:
+                self.option_list = { self.user.basic_pomo.text : "bpomo_id"}
+            else:
+                self.option_list = { "Basic Pomodoro" : "bpomo_noid"}
+            for id in self.user.habits:
+                self.option_list[self.user.habits[id].text] = id
+            self.switch_task_menu = tk.OptionMenu(self, self.list_var, *self.option_list)
+            self.set_optionlist_from_radio()
 
         # Grid Left side
         self.user_name_label.grid(row=1, column=1, sticky='w')
@@ -106,11 +120,16 @@ class Pomodoro(tk.Frame):
         self.current_task_counter_label.grid(row=2, column=4, sticky="w")
         self.current_task_code_label.grid(row=3, column=3, sticky="w")
         self.current_task_notes_label.grid(row=5, column=3, columnspan=3, sticky="w")
+        if self.user:
+            self.switch_task_label.grid(row=6, column=3, sticky="w")
+            self.switch_task_menu.grid(row=7, column=3)
         self.current_task_info_label.grid_remove()
         self.current_task_counter_label.grid_remove()
         self.current_task_code_label.grid_remove()
         self.current_task_notes_label.grid_remove()
-
+        if self.user:
+            self.switch_task_label.grid_remove()
+            self.switch_task_menu.grid_remove()
         # Update
         self.update_habit_labels()
 
@@ -128,13 +147,15 @@ class Pomodoro(tk.Frame):
 
             # prompt and start new session
             if self.is_break and self.session_counter % 4 != 0:
-                success_text, scored_task = self.score_to_habitica()
-                notification(0, task=scored_task)
-                prompt_answer = messagebox.askquestion("Session Ended!", success_text + "Are you ready for a break?", icon='question')
+                if self.user:
+                    success_text, scored_task = self.score_to_habitica()
+                notification(0, task=scored_task if self.user is True else "")
+                prompt_answer = messagebox.askquestion("Session Ended!", success_text if self.user is True else "" + "Are you ready for a break?", icon='question')
             elif self.is_break and self.session_counter % 4 == 0:
-                success_text, scored_task = self.score_to_habitica()
-                notification(0, task=scored_task)
-                prompt_answer = messagebox.askquestion("4 POMODORI!", success_text + "\nDo you think you deserve a very long break?", icon='question')
+                if self.user:
+                    success_text, scored_task = self.score_to_habitica()
+                notification(0, task=scored_task if self.user is True else "")
+                prompt_answer = messagebox.askquestion("4 POMODORI!", success_text if self.user is True else "" + "\nDo you think you deserve a very long break?", icon='question')
             else:
                 notification(1)
                 prompt_answer = messagebox.askquestion("Time's up!", "Ready for a new session?", icon='question')
@@ -144,16 +165,28 @@ class Pomodoro(tk.Frame):
                 self.after_cancel(self.job)
                 self.count(self.short_rest_scs)
                 self.status_label.config(text="Break", fg="orange")
+                if self.user:
+                    self.switch_task_label.grid()
+                    self.switch_task_menu.grid()
             elif prompt_answer == 'yes' and self.session_counter % 4 == 0 and self.is_break:
                 self.after_cancel(self.job)
                 self.count(self.long_rest_scs)
                 self.status_label.config(text="Long Break", fg="orange")
+                if self.user:
+                    self.switch_task_label.grid()
+                    self.switch_task_menu.grid()
             elif prompt_answer == 'no':
                 self.stop_count()
             else:
                 self.status_label.config(text="Pomodoro", fg="green")
+                if self.user:
+                    self.set_radio_from_optionlist()
+                self.update_current_task_labels()
                 self.session_counter += 1
                 self.count(self.session_scs)
+                if self.user:
+                    self.switch_task_label.grid_remove()
+                    self.switch_task_menu.grid_remove()
             return
 
         m, s = divmod(timer, 60)
@@ -171,18 +204,20 @@ class Pomodoro(tk.Frame):
             ctask_frame.pack(side="top", fill="both", expand=True)
 
     def update_stats_labels(self):
-        self.user_name_label.configure(text="{} (lv{:.0f})".format(self.user.username, self.user.lvl))
-        self.user_hp_label.configure(text="HP: {:.0f} / {}".format(self.user.hp, self.user.max_hp))
-        self.user_exp_label.configure(text="Exp: {:.0f} / {}".format(self.user.exp, self.user.exp_next))
-        self.user_gold_label.configure(text="Gold: {:.0f}".format(self.user.gold))
+        if self.user:
+            self.user_name_label.configure(text="{} (lv{:.0f})".format(self.user.username, self.user.lvl))
+            self.user_hp_label.configure(text="HP: {:.0f} / {}".format(self.user.hp, self.user.max_hp))
+            self.user_exp_label.configure(text="Exp: {:.0f} / {}".format(self.user.exp, self.user.exp_next))
+            self.user_gold_label.configure(text="Gold: {:.0f}".format(self.user.gold))
 
     def update_habit_labels(self):
-        if self.user.basic_pomo:
-            self.bpomo_radio.configure(text=self.user.basic_pomo.text)
-            self.bpomo_counter_label.configure(text="{}/{}".format(self.user.basic_pomo.counter_up, self.user.basic_pomo.counter_down))
-            if self.user.basic_pomoset:
-                self.bpomoset_label.configure(text="\t{}".format(self.user.basic_pomoset.text))
-                self.bpomoset_counter_label.configure(text="{}/{}".format(self.user.basic_pomoset.counter_up, self.user.basic_pomoset.counter_down))
+        if self.user:
+            if self.user.basic_pomo:
+                self.bpomo_radio.configure(text=self.user.basic_pomo.text)
+                self.bpomo_counter_label.configure(text="{}/{}".format(self.user.basic_pomo.counter_up, self.user.basic_pomo.counter_down))
+                if self.user.basic_pomoset:
+                    self.bpomoset_label.configure(text="\t{}".format(self.user.basic_pomoset.text))
+                    self.bpomoset_counter_label.configure(text="{}/{}".format(self.user.basic_pomoset.counter_up, self.user.basic_pomoset.counter_down))
 
         for index, row in enumerate(self.habit_radio_list):
             id = self.habit_radio_list[index].cget("value")
@@ -256,6 +291,9 @@ class Pomodoro(tk.Frame):
         self.current_task_counter_label.grid_remove()
         self.current_task_code_label.grid_remove()
         self.current_task_notes_label.grid_remove()
+        if self.user:
+            self.switch_task_label.grid_remove()
+            self.switch_task_menu.grid_remove()
 
     # starts counting loop
     def start(self):
@@ -274,12 +312,23 @@ class Pomodoro(tk.Frame):
             self.habit_daily_counter_label_list[index].grid_remove()
         # self.start_btn.configure(command=tk.DISABLED)
 
+        if self.user:
+            self.set_optionlist_from_radio()
+
         self.update_current_task_labels()
 
         self.current_task_info_label.grid()
         self.current_task_counter_label.grid()
         self.current_task_code_label.grid()
         self.current_task_notes_label.grid()
+
+    def set_optionlist_from_radio(self):
+        for op in self.option_list:
+            if self.option_list[op] == self.radio_var.get():
+                self.list_var.set(op)
+
+    def set_radio_from_optionlist(self):
+        self.radio_var.set(self.option_list[self.list_var.get()])
 
     def update_current_task_labels(self):
         if self.radio_var.get() == "bpomo_noid":
